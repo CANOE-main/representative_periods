@@ -1,0 +1,69 @@
+# Configuration for CANOE representative day aggregation
+
+# Can switch off plotting if not needed
+show_plots: true
+
+# Can use this to do e.g. representative day-pairs (2) or representative weeks (7)
+days_per_period: 1
+
+# If this is set to true, representative e.g. weeks will each just be seven representative days in a row
+disaggregate_multiday: true
+
+# Final number of representative periods to apply to the database
+final_periods: 8
+
+# Number of representative days to test and visualise. Should be several
+# Only one (selected above) will be applied to the database
+test_periods:
+  - 4
+  - 6
+  - 8
+  - 10
+  - 12
+  - 16
+  - 20
+
+# Which days to force as cluster centres
+# TSAM will perform clustering then recalculate clusters with these new centres,
+# moving some days into these clusters instead. 1-index form i.e. D185 -> 185, D007 -> 7
+force_days:
+ - 185
+
+# Add this to forced day to get the index of that day in the csvs.
+# Initially, going from 1-indexing to 0-indexing and omitting Jan 1 so -2
+day_to_index: -2
+
+# Which clustering algorithm to use. Default to hierarchical
+# averaging, k_means, k_medoids, k_maxoids, hierarchical, adjacent_periods
+clustering_method: hierarchical
+
+# Which timeseries data vectors to cluster over
+# Should be a nested dictionary representing directories of all csv timeseries
+# files to be clustered over. Final csv files should be in list form. Do not nest
+# further dictionaries within final lists.
+timeseries:
+  ontario: # all are population-weighted
+    - cf_hydro # capacity factor of existing hydroelectric (daily and run-of-river)
+    - cf_solar # capacity factor of existing solar PV
+    - cf_wind # capacity factor of existing onshore wind
+    #- cloud_cover # percentage cloud cover (fraction covered)
+    #- humidity # relative humidity
+    #- irradiance_surface # solar irradiance at surface
+    #- ldv_charging # demand for electricity for light duty vehicle charging
+    - load # historical demand for electricity within the province of Ontario
+    #- market_demand # market demand for electricity, including exchange along regional interties
+    #- precipitation # precipitation
+    #- temperature # temperature
+    #- wind_speed # wind speed
+
+# Example of how the timeseries parameter can be nested
+# Note the bottom of the nest always ends in a list (which can be empty)
+#timeseries:
+#  alberta:
+#    - temperature
+#    - ldv_charging
+#  other:
+#    global:
+#      - cf_solar
+#      - cf_wind
+#    economic:
