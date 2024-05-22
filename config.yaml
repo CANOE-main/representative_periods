@@ -1,47 +1,47 @@
-# Configuration for CANOE representative day aggregation
+# Configuration for CANOE representative period aggregation
 
 # Can switch off plotting if not needed
 show_plots: true
 
 # Can use this to do e.g. representative day-pairs (2) or representative weeks (7)
-days_per_period: 1
+days_per_period: 1 # [integer]
 
 # If this is set to true, representative e.g. weeks will each just be seven representative days in a row
-disaggregate_multiday: true
+disaggregate_multiday: true # [boolean]
 
 # Final number of representative periods to apply to the database
-final_periods: 8
+final_periods: 8 # [integer]
 
 # Number of representative days to test and visualise. Should be several
 # Only one (selected above) will be applied to the database
-test_periods:
+test_periods: # [list[integer]]
   - 4
-  - 6
+#  - 6
   - 8
-  - 10
+#  - 10
   - 12
-  - 16
+#  - 16
   - 20
 
 # Which days to force as cluster centres
 # TSAM will perform clustering then recalculate clusters with these new centres,
 # moving some days into these clusters instead. 1-index form i.e. D185 -> 185, D007 -> 7
-force_days:
+force_days: # [list[integer]]
  - 185
 
 # Add this to forced day to get the index of that day in the csvs.
 # Initially, going from 1-indexing to 0-indexing and omitting Jan 1 so -2
-day_to_index: -2
+day_to_index: -2 # [integer]
 
 # Which clustering algorithm to use. Default to hierarchical
 # averaging, k_means, k_medoids, k_maxoids, hierarchical, adjacent_periods
-clustering_method: hierarchical
+clustering_method: hierarchical # [string]
 
 # Which timeseries data vectors to cluster over
 # Should be a nested dictionary representing directories of all csv timeseries
 # files to be clustered over. Final csv files should be in list form. Do not nest
 # further dictionaries within final lists.
-timeseries:
+timeseries: # [dict[dict[...[list[string]]]]]
   ontario: # all are population-weighted
     - cf_hydro # capacity factor of existing hydroelectric (daily and run-of-river)
     - cf_solar # capacity factor of existing solar PV

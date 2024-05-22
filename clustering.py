@@ -46,7 +46,7 @@ def run(show_plots=False):
 
     print(df_timeseries)
 
-    test_periods = set(utils.config['test_periods'])
+    test_periods = set(utils.config['test_periods']) if utils.config['test_periods'] is not None else set()
     test_periods.add(utils.config['final_periods']) # in case it wasn't already in the set
 
     dur_axes = dict()
@@ -78,6 +78,7 @@ def run(show_plots=False):
             else:
                 df_predicted[ts].sort_values(ascending=False).reset_index(drop=True).plot(label=f"{n_periods} periods", ax=dur_axes[ts], color=tuple(colour))
 
+        if len(test_periods) <= 1: break
         if colour[2] < 1: colour[2] = min(1, colour[2] + 2/(len(test_periods)-1))
         else: colour[0] = colour[0] = max(0, colour[0] - 2/(len(test_periods)-1))
             
@@ -99,7 +100,7 @@ def cluster_days(df_timeseries: pd.DataFrame, n_periods: int) -> pd.DataFrame:
     method = utils.config['clustering_method']
     csv_name = f"{method}_{n_periods}p.csv"
 
-    print(f"Clustering {n_periods} periods using {method} method...")
+    print(f"\nClustering {n_periods} periods using {method} method...")
 
     if utils.config['force_days'] is None: forced_periods = []
     else:
@@ -123,6 +124,10 @@ def cluster_days(df_timeseries: pd.DataFrame, n_periods: int) -> pd.DataFrame:
 
     df_days = pd.DataFrame(index=days, data=weights.values(), columns=['weight']).sort_index()
     df_days.to_csv(out_data + "representative_days/" + csv_name)
+
+    if n_periods == utils.config['final_periods']:
+        print("\nOutput representative periods:\n")
+        print(df_days.head(50))
 
     if n_periods == utils.config['final_periods']: df_days.to_csv(this_dir + "periods.csv")
 
