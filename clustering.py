@@ -48,6 +48,8 @@ def run(show_plots=False):
 
     test_periods = set(utils.config['test_periods']) if utils.config['test_periods'] is not None else set()
     test_periods.add(utils.config['final_periods']) # in case it wasn't already in the set
+    test_periods = list(test_periods)
+    test_periods.sort()
 
     dur_axes = dict()
     dur_figs = dict()

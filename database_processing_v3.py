@@ -245,7 +245,7 @@ def _get_sqlite_databases():
 
 def _get_schema_version(database):
 
-    conn = sqlite3.connect(output_dir + f"{database}.sqlite")
+    conn = sqlite3.connect(input_dir + f"{database}.sqlite")
     curs = conn.cursor()
 
     tables = {t[0] for t in curs.execute("SELECT name FROM sqlite_schema").fetchall()}
