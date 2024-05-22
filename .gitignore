@@ -1,3 +1,4 @@
 __pycache__/
 clustering_output_data/*/
 *.sqlite
+periods.csv
