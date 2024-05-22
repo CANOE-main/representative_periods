@@ -18,18 +18,23 @@ def init():
     if initialised: return
 
     if not os.path.isdir(out_data): os.mkdir(out_data)
-
+        
     out_dirs = [
-        'reduced_timeseries',
-        'accuracy_indicators',
-        'extrapolated_timeseries',
-        'representative_days',
-        'duration_curve_plots',
-        'timeseries_plots'
+        'reduced_timeseries/',
+        'accuracy_indicators/',
+        'extrapolated_timeseries/',
+        'representative_days/',
+        'duration_curve_plots/',
+        'timeseries_plots/'
     ]
 
     for dir in out_dirs:
         if not os.path.isdir(out_data + dir): os.mkdir(out_data + dir)
+
+        # Empty output data directories
+        for file in os.listdir(out_data + dir):
+            try: os.remove(out_data + dir + file)
+            except Exception as e: print(e)
 
     initialised = True
     print("\nInitialised clustering.\n")
