@@ -1,0 +1,16 @@
+name: canoe-backend
+channels:
+    - defaults
+    - conda-forge
+dependencies:
+    - python=3.12
+    - matplotlib
+    - pandas
+    - numpy
+    - xmltodict
+    - openpyxl
+    - requests
+    - pyyaml
+    - xlsxwriter
+    - scipy
+    - tsam # WARNING: this is for representative period selection and requires modification. See README in representative_periods
