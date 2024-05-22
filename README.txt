@@ -9,11 +9,17 @@ Generates representative periods based on configuration in config.yaml. Clusteri
 database_processing.py
 ======================
 Applies representative periods in periods.csv to all sqlite databases in input_sqlite/, outputting processed databases to output_sqlite/.
+Only applies to databases using the old Temoa schema. Selects appropriate databases automatically.
+
+======================
+database_processing_v3.py
+======================
+Same as database_processing but only applies to Temoa v3 schema databases.
 
 ==============
 process_all.py
 ==============
-Runs clustering.py then database_processing.py.
+Runs clustering.py then database_processing.py and database_processing_v3.py
 
 ========================
 timeseriesaggregation.py
