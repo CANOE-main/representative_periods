@@ -4,13 +4,13 @@
 show_plots: true
 
 # Can use this to do e.g. representative day-pairs (2) or representative weeks (7)
-days_per_period: 1 # [integer]
+days_per_period: 7 # [integer]
 
 # If this is set to true, representative e.g. weeks will each just be seven representative days in a row
-disaggregate_multiday: false # [boolean]
+disaggregate_multiday: true # [boolean]
 
 # Final number of representative periods to apply to the database
-final_periods: 12 # [integer]
+final_periods: 3 # [integer]
 
 # Number of representative days to test and visualise. Should be several
 # Only one (selected above) will be applied to the database
@@ -30,7 +30,7 @@ test_periods: # [list[integer]]
 force_days: # [list[integer]]
  - 185
 
-# Add this to forced day to get the index of that day in the csvs.
+# Translation between 1-indexed days (e.g. D007) and in-timeseries days
 # Initially, going from 1-indexing to 0-indexing and omitting Jan 1 so -2
 day_to_index: -2 # [integer]
 

@@ -22,8 +22,8 @@ def init():
     out_dirs = [
         'reduced_timeseries/',
         'accuracy_indicators/',
-        'extrapolated_timeseries/',
-        'representative_days/',
+        'recreated_timeseries/',
+        'representative_periods/',
         'duration_curve_plots/',
         'timeseries_plots/'
     ]
@@ -130,7 +130,7 @@ def cluster_days(df_timeseries: pd.DataFrame, n_periods: int) -> pd.DataFrame:
     days = [index_to_season(d) for d in indices]
 
     df_days = pd.DataFrame(index=days, data=weights.values(), columns=['weight']).sort_index()
-    df_days.to_csv(out_data + "representative_days/" + csv_name)
+    df_days.to_csv(out_data + "representative_periods/" + csv_name)
 
     if n_periods == utils.config['final_periods']:
         print("\nOutput representative periods:\n")
@@ -147,7 +147,7 @@ def cluster_days(df_timeseries: pd.DataFrame, n_periods: int) -> pd.DataFrame:
     df_accuracy.to_csv(out_data + "accuracy_indicators/" + csv_name)
 
     df_predicted = ts_agg.predictOriginalData()
-    df_predicted.to_csv(out_data + "extrapolated_timeseries/" + csv_name)
+    df_predicted.to_csv(out_data + "recreated_timeseries/" + csv_name)
     
     return df_predicted
 
