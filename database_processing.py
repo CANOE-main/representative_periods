@@ -34,7 +34,7 @@ def init():
 
             df_periods = df_periods.drop(period, axis='index')
 
-    print("\nApplying the following periods:\n")
+    print("\nApplying the following periods to old databases:\n")
     print(df_periods)
 
     initialised = True
@@ -49,6 +49,8 @@ def process_all():
     databases = _get_sqlite_databases()
 
     for database in databases:
+
+        if _get_schema_version(database) != 0: continue
 
         print(f"Processing {database}...")
         process_database(database)
@@ -238,6 +240,20 @@ def _get_sqlite_databases():
             if split[1] == '.sqlite': databases.append(split[0])
 
     return databases
+
+
+
+def _get_schema_version(database):
+
+    conn = sqlite3.connect(output_dir + f"{database}.sqlite")
+    curs = conn.cursor()
+
+    tables = {t[0] for t in curs.execute("SELECT name FROM sqlite_schema").fetchall()}
+    if 'MetaData' not in tables: return 0
+
+    mj_vers = curs.execute("SELECT value FROM MetaData WHERE element == 'DB_MAJOR'").fetchone()[0]
+
+    return mj_vers
 
 
 

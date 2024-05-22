@@ -4,10 +4,10 @@
 show_plots: true
 
 # Can use this to do e.g. representative day-pairs (2) or representative weeks (7)
-days_per_period: 1 # [integer]
+days_per_period: 2 # [integer]
 
 # If this is set to true, representative e.g. weeks will each just be seven representative days in a row
-disaggregate_multiday: true # [boolean]
+disaggregate_multiday: false # [boolean]
 
 # Final number of representative periods to apply to the database
 final_periods: 8 # [integer]
