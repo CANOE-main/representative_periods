@@ -1,4 +1,4 @@
-A package for processing CANOE databases to apply representative periods. Currently configured for original Temoa schemas.
+A package for processing CANOE databases to apply representative periods. Automatically checks for old or new schema.
 
 =============
 clustering.py

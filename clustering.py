@@ -95,7 +95,7 @@ def run(show_plots=False):
         ts_axes[ts].legend()
         ts_figs[ts].savefig(out_data + f"timeseries_plots/{ts}.pdf")
 
-    print("\nClustering complete.")
+    print("\nClustering complete.\n")
 
     if show_plots:
         print("Showing plots.")
