@@ -107,26 +107,43 @@ def cluster_days(df_timeseries: pd.DataFrame, n_periods: int) -> pd.DataFrame:
     method = utils.config['clustering_method']
     csv_name = f"{method}_{n_periods}p.csv"
 
-    print(f"\nClustering {n_periods} periods using {method} method...")
+    print(f"\nClustering {n_periods} periods using {method} method...\n")
 
     if utils.config['force_days'] is None: forced_periods = []
     else:
         forced_days = [day + utils.config['day_to_index'] for day in utils.config['force_days']]
         forced_periods = [day // utils.config['days_per_period'] for day in forced_days]
+    
+    # Making room for extreme periods
+    extreme_periods = utils.config['extreme_periods']
+    n_clusters = n_periods - len(forced_days) - sum(len(val) for val in extreme_periods.values() if val)
 
     ts_agg = tsam.TimeSeriesAggregation(
         df_timeseries,
-        noTypicalPeriods = n_periods - len(forced_periods),
+        noTypicalPeriods = n_clusters,
         hoursPerPeriod = 24*utils.config['days_per_period'],
         clusterMethod = method,
         extremePeriodMethod='new_cluster_center',
         addManual=forced_periods,
+        addPeakMax=extreme_periods['max_peak'],
+        addPeakMin=extreme_periods['min_peak'],
+        addMeanMax=extreme_periods['max_mean'],
+        addMeanMin=extreme_periods['min_mean'],
         resolution=1,
         solver='gurobi',
     )
 
     weights = ts_agg.clusterPeriodNoOccur
-    indices = ts_agg.clusterCenterIndices + forced_periods
+    indices = ts_agg.clusterCenterIndices
+
+    # Add extreme period indices
+    for period in ts_agg.extremePeriods.values():
+        index = period['stepNo']
+        if index not in indices: indices.append(index)
+
+    if len(weights) < n_periods:
+        print(f"\nExtreme periods overlapped with typical periods! Got {len(weights)} periods instead of {n_periods}.")
+    
     days = [index_to_season(d) for d in indices]
 
     df_days = pd.DataFrame(index=days, data=weights.values(), columns=['weight']).sort_index()
@@ -134,9 +151,8 @@ def cluster_days(df_timeseries: pd.DataFrame, n_periods: int) -> pd.DataFrame:
 
     if n_periods == utils.config['final_periods']:
         print("\nOutput representative periods:\n")
-        print(df_days.head(50))
-
-    if n_periods == utils.config['final_periods']: df_days.to_csv(this_dir + "periods.csv")
+        print(df_days.head(50), '\n')
+        df_days.to_csv(this_dir + "periods.csv")
 
     df_typ_periods = ts_agg.createTypicalPeriods()
     df_typ_periods.index = df_typ_periods.index.set_levels(df_typ_periods.index.levels[0].map(lambda i: days[i]), level=0)
