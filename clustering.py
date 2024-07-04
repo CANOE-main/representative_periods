@@ -116,7 +116,7 @@ def cluster_days(df_timeseries: pd.DataFrame, n_periods: int) -> pd.DataFrame:
     
     # Making room for extreme periods
     extreme_periods = utils.config['extreme_periods']
-    n_clusters = n_periods - len(forced_days) - sum(len(val) for val in extreme_periods.values() if val)
+    n_clusters = n_periods - len(forced_periods) - sum(len(val) for val in extreme_periods.values() if val)
 
     ts_agg = tsam.TimeSeriesAggregation(
         df_timeseries,

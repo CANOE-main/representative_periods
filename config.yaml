@@ -7,6 +7,8 @@ show_plots: true
 days_per_period: 1 # [integer]
 
 # If this is set to true, representative e.g. weeks will each just be seven representative days in a row
+# MUST BE TRUE as some Temao constraints (e.g. StorageEnergy) implicitly assume time_of_day time slices
+# represent slices of a single day
 disaggregate_multiday: true # [boolean]
 
 # Final number of representative periods to apply to the database
@@ -39,6 +41,7 @@ extreme_periods: # dict[list[str]]
     - net_load
   min_peak: # day with lowest single value
   max_mean: # day with highest mean value
+    - net_load
   min_mean: # day with lowest mean value
 
 # Translation between 1-indexed days (e.g. D007) and in-timeseries days
