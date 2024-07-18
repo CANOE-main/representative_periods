@@ -10,9 +10,9 @@ from matplotlib import pyplot as pp
 
 def run():
 
-    clustering.run()
-    database_processing.process_all()
-    database_processing_v3.process_all()
+    clustering.run() # cluster periods
+    database_processing.process_all() # process Temoa 2 databases
+    database_processing_v3.process_all() # process Temoa 3 databases
 
     print("All processing completed.")
 

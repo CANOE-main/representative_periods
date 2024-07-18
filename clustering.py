@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as pp
+import feature_selection as fi
 import tsam.timeseriesaggregation as tsam
 import utils
 import os
@@ -13,12 +14,13 @@ initialised = False
 
 def init():
 
-    global initialised
+    global initialised # safety! only do this once
 
     if initialised: return
 
     if not os.path.isdir(out_data): os.mkdir(out_data)
-        
+    
+    ## Make output data directories or clear them out
     out_dirs = [
         'reduced_timeseries/',
         'accuracy_indicators/',
@@ -45,17 +47,22 @@ def run(show_plots=False):
 
     init()
 
+    print(utils.config['custom_features'])
+
+    # Get selected timeseries to cluster over
     df_timeseries = collect_timeseries()
 
     print("Clustering over timeseries:\n")
 
-    print(df_timeseries)
+    print(df_timeseries) # display chosen timeseries for error catching
 
+    # Get the list of test numbers of periods for plotting
     test_periods = set(utils.config['test_periods']) if utils.config['test_periods'] is not None else set()
     test_periods.add(utils.config['final_periods']) # in case it wasn't already in the set
     test_periods = list(test_periods)
     test_periods.sort()
 
+    # Build figures and plot original timeseries and duration curves
     dur_axes = dict()
     dur_figs = dict()
     ts_axes = dict()
@@ -73,10 +80,12 @@ def run(show_plots=False):
         ts_axes[ts].set_xlabel('duration (h)')
         ts_axes[ts].set_ylabel(ts)
 
+    # Plot each set of test periods on both figures going from red -> blue with increasing n periods. Green if final number of periods
     colour = [1, 0, 0]
     for n_periods in test_periods:
 
         df_predicted = cluster_days(df_timeseries=df_timeseries, n_periods=n_periods)
+        if df_predicted is None: continue
 
         for ts in df_timeseries.columns:
             if n_periods == utils.config['final_periods']:
@@ -85,10 +94,12 @@ def run(show_plots=False):
             else:
                 df_predicted[ts].sort_values(ascending=False).reset_index(drop=True).plot(label=f"{n_periods} periods", ax=dur_axes[ts], color=tuple(colour))
 
+        # This transitions linearly from red to blue
         if len(test_periods) <= 1: break
         if colour[2] < 1: colour[2] = min(1, colour[2] + 2/(len(test_periods)-1))
         else: colour[0] = colour[0] = max(0, colour[0] - 2/(len(test_periods)-1))
-            
+    
+    # Add the legend and save the figure to output data directory
     for ts in df_timeseries.columns:
         dur_axes[ts].legend()
         dur_figs[ts].savefig(out_data + f"duration_curve_plots/{ts}.pdf")
@@ -102,6 +113,7 @@ def run(show_plots=False):
         pp.show()
 
 
+
 def cluster_days(df_timeseries: pd.DataFrame, n_periods: int) -> pd.DataFrame:
 
     method = utils.config['clustering_method']
@@ -109,15 +121,24 @@ def cluster_days(df_timeseries: pd.DataFrame, n_periods: int) -> pd.DataFrame:
 
     print(f"\nClustering {n_periods} periods using {method} method...\n")
 
+    # Get any configured forced days, make index conversion and convert to period indices (if multiday periods)
     if utils.config['force_days'] is None: forced_periods = []
     else:
         forced_days = [day + utils.config['day_to_index'] for day in utils.config['force_days']]
-        forced_periods = [day // utils.config['days_per_period'] for day in forced_days]
-    
+        forced_periods = [day // utils.config['days_per_period'] for day in forced_days] # does nothing if one-day periods
+
+    # Collect custom feature periods based on any configured in the list
+    forced_periods.extend([p for p in collect_custom_feature_periods() if p not in forced_periods])
+
     # Making room for extreme periods
     extreme_periods = utils.config['extreme_periods']
     n_clusters = n_periods - len(forced_periods) - sum(len(val) for val in extreme_periods.values() if val)
 
+    if n_clusters < 1:
+        print("Too many feature periods! Nothing left for clustering. Skipping.")
+        return
+
+    # Execute the clustering
     ts_agg = tsam.TimeSeriesAggregation(
         df_timeseries,
         noTypicalPeriods = n_clusters,
@@ -133,35 +154,43 @@ def cluster_days(df_timeseries: pd.DataFrame, n_periods: int) -> pd.DataFrame:
         solver='gurobi',
     )
 
+    # Get the indices of chosen periods and their weights of the year
     weights = ts_agg.clusterPeriodNoOccur
     indices = ts_agg.clusterCenterIndices
 
-    # Add extreme period indices
+    if len(ts_agg.extremePeriods.values()) < n_periods - n_clusters:
+        print(f"Overlap between feature periods! Lost {n_periods - n_clusters - len(ts_agg.extremePeriods.values())} period(s).")
+
+    # Add feature period indices
     for period in ts_agg.extremePeriods.values():
         index = period['stepNo']
         if index not in indices: indices.append(index)
-
-    if len(weights) < n_periods:
-        print(f"\nExtreme periods overlapped with typical periods! Got {len(weights)} periods instead of {n_periods}.")
+        else: print(f"Feature period {utils.index_to_season(index)} overlapped with typical periods! Lost one period.")
     
-    days = [index_to_season(d) for d in indices]
+    # Convert period indices to string period names as in the database
+    days = [utils.index_to_season(d) for d in indices]
 
+    # Saving day selection and weights for all test numbers of periods to output data directory
     df_days = pd.DataFrame(index=days, data=weights.values(), columns=['weight']).sort_index()
     df_days.to_csv(out_data + "representative_periods/" + csv_name)
 
+    # For the final number of periods, output to periods.csv for database processing
     if n_periods == utils.config['final_periods']:
         print("\nOutput representative periods:\n")
         print(df_days.head(50), '\n')
         df_days.to_csv(this_dir + "periods.csv")
 
+    # Output the timeseries data for the periods selected
     df_typ_periods = ts_agg.createTypicalPeriods()
     df_typ_periods.index = df_typ_periods.index.set_levels(df_typ_periods.index.levels[0].map(lambda i: days[i]), level=0)
     df_typ_periods = df_typ_periods.sort_index(level=0)
     df_typ_periods.to_csv(out_data + "reduced_timeseries/" + csv_name)
 
+    # Output accuracy indicators for clustering
     df_accuracy = ts_agg.accuracyIndicators()
     df_accuracy.to_csv(out_data + "accuracy_indicators/" + csv_name)
 
+    # Output recreated full-length timeseries based on selected periods
     df_predicted = ts_agg.predictOriginalData()
     df_predicted.to_csv(out_data + "recreated_timeseries/" + csv_name)
     
@@ -169,35 +198,18 @@ def cluster_days(df_timeseries: pd.DataFrame, n_periods: int) -> pd.DataFrame:
 
 
 
-def index_to_season(idx: int):
-
-    day = index_to_day(idx)
-
-    if utils.config['days_per_period'] == 1: return utils.stringify_day(day)
-    elif utils.config['days_per_period'] > 1:
-        day_2 = day + utils.config['days_per_period'] - 1
-
-        return f"{utils.stringify_day(day)}-{utils.stringify_day(day_2)}"
-
-
-def index_to_day(idx: int):
-    d = idx * utils.config['days_per_period'] - utils.config['day_to_index']
-    return d
-
-
-
-# Collects all selected timeseries and puts them into a dataframe
-def collect_timeseries():
+# Collects all selected timeseries and puts them into a dataframe for clustering
+def collect_timeseries() -> pd.DataFrame:
 
     dfs = []
-    files = get_all_files() # gets a list of paths to csv files
+    files = get_all_files() # gets a list of paths to selected timeseries csv files
 
     for path in files:
 
         file = this_dir + "/".join(path) + '.csv' # turn path list into actual file path
         df = pd.read_csv(file, index_col=0).astype(float)
         df.index = range(len(df.index))
-        dfs.append(df) # read the csv and add to pile
+        dfs.append(df) # read the csv and add to the list
 
     # Concatenate all found csv files into a single dataframe for TSAM
     df_timeseries = pd.concat(dfs, axis='columns')
@@ -205,10 +217,26 @@ def collect_timeseries():
 
 
 
+# Collects and returns custom feature periods identified by feature identification based on list configured in config
+def collect_custom_feature_periods() -> list[int]:
+
+    custom_feature_periods = []
+
+    # For each feature configured in the list, pass that dictionary to the relevant
+    # feature identification method and get period indices in return
+    for feature in utils.config['custom_features']:
+            
+            match feature['method']:
+                case 'max_mean_period': custom_feature_periods.extend(fi.max_mean_period(feature))
+    
+    return custom_feature_periods
+
+
+
 # Walks the timeseries nested dictionary to find all selected csv files
 def get_all_files() -> list[list[str]]:
 
-    files = []
+    files = [] # just a collector that the recursive method can add into
     get_files(['timeseries'], utils.config['timeseries'], files)
     
     return files

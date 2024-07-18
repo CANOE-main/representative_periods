@@ -28,3 +28,20 @@ def stringify_day(day: int) -> str:
 def destringify_day(day: str) -> str:
 
     return int(day[1:])
+
+
+def index_to_season(idx: int):
+
+    day = index_to_day(idx)
+
+    if config['days_per_period'] == 1: return stringify_day(day)
+    elif config['days_per_period'] > 1:
+        day_2 = day + config['days_per_period'] - 1
+
+        return f"{stringify_day(day)}-{stringify_day(day_2)}"
+
+
+def index_to_day(idx: int):
+
+    d = idx * config['days_per_period'] - config['day_to_index']
+    return d
