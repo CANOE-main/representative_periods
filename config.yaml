@@ -12,11 +12,17 @@ days_per_period: 1 # [integer]
 disaggregate_multiday: true # [boolean]
 
 # Final number of representative periods to apply to the database
-final_periods: 16 # [integer]
+final_periods: 24 # [integer]
 
 # Number of representative days to test and visualise. Should be several
 # Only one (selected above) will be applied to the database
 test_periods: # [list[integer]]
+  - 4
+  - 8
+  - 12
+  - 16
+  - 32
+  - 64
 
 # Which days to force as cluster centres
 # TSAM will perform clustering then recalculate clusters with these new centres,
@@ -28,20 +34,21 @@ force_days: # [list[integer]]
 # which should apply that extreme period selection
 extreme_periods: # dict[list[str]]
   max_peak: # day with highest single value
-    - net_load
+    - temperature
     - load
   min_peak: # day with lowest single value
+    - temperature
   max_mean: # day with highest mean value
-    - net_load
+    - synthetic_net_load
   min_mean: # day with lowest mean value
 
 # Additional feature periods to add programatically. Given as a list of dictionaries where
 # each dictionary calls a method of feature_identification.py and passes relevant
 # parameters. The name of each dictionary does not matter.
 custom_features: # list[dict[any]]
-  - method: max_mean_period
-    days_in_period: 3
-    timeseries: ontario/net_load
+  #- method: max_mean_period
+  #  days_in_period: 2
+  #  timeseries: ontario/net_load
 
 # Translation between 1-indexed days (e.g. D007) and in-timeseries days
 # Initially, going from 1-indexing to 0-indexing and omitting Jan 1 so -2
@@ -60,18 +67,19 @@ timeseries: # [dict[dict[...[list[string]]]]]
     #- cf_hydro # capacity factor of existing hydroelectric (daily and run-of-river)
     #- cf_solar # capacity factor of existing solar PV
     #- cf_wind # capacity factor of existing onshore wind
-    - cf_new_solar # capacity factor of new solar PV
+    #- cf_new_solar # capacity factor of new solar PV
     - cf_new_wind # capacity factor of new onshore wind
     #- cloud_cover # percentage cloud cover (fraction covered)
-    #- humidity # relative humidity
+    - humidity # relative humidity
     #- irradiance_surface # solar irradiance at surface
     #- ldv_charging # demand for electricity for light duty vehicle charging
     - load # historical demand for electricity within the province of Ontario
     #- market_demand # market demand for electricity, including exchange along regional interties
     #- precipitation # precipitation
-    #- temperature # temperature
+    - temperature # temperature
     #- wind_speed # wind speed
-    - net_load
+    #- net_load
+    - synthetic_net_load
 
 # Example of how the timeseries parameter can be nested
 # Note the bottom of the nest always ends in a list (which can be empty)

@@ -162,8 +162,10 @@ def cluster_days(df_timeseries: pd.DataFrame, n_periods: int) -> pd.DataFrame:
         print(f"Overlap between feature periods! Lost {n_periods - n_clusters - len(ts_agg.extremePeriods.values())} period(s).")
 
     # Add feature period indices
-    for period in ts_agg.extremePeriods.values():
+    if n_periods == utils.config['final_periods']: print("Selected feature periods:")
+    for name, period in ts_agg.extremePeriods.items():
         index = period['stepNo']
+        if n_periods == utils.config['final_periods']: print(utils.index_to_season(index), name)
         if index not in indices: indices.append(index)
         else: print(f"Feature period {utils.index_to_season(index)} overlapped with typical periods! Lost one period.")
     
@@ -221,6 +223,8 @@ def collect_timeseries() -> pd.DataFrame:
 def collect_custom_feature_periods() -> list[int]:
 
     custom_feature_periods = []
+
+    if utils.config['custom_features'] is None: return custom_feature_periods
 
     # For each feature configured in the list, pass that dictionary to the relevant
     # feature identification method and get period indices in return
