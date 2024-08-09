@@ -47,8 +47,6 @@ def run(show_plots=False):
 
     init()
 
-    print(utils.config['custom_features'])
-
     # Get selected timeseries to cluster over
     df_timeseries = collect_timeseries()
 
