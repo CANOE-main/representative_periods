@@ -11,6 +11,11 @@ days_per_period: 1 # [integer]
 # represent slices of a single day. Can set to false if those constraints are edited
 disaggregate_multiday: true # [boolean]
 
+# Should we preserve hourly demand values or annual totals in absolute terms?
+# The clustering reduces the number of days and renormalises DSDs so can't preserve both
+# 'hourly' or 'annual'
+demand_preservation: 'hourly' # [str]
+
 # Final number of representative periods to apply to the database
 final_periods: 12 # [integer]
 

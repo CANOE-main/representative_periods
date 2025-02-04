@@ -94,8 +94,11 @@ def process_multiday_period(database, hours):
         'CapacityFactorTech',
         'CapacityFactorProcess',
         'MinSeasonalActivity',
-        'MaxSeasonalActivity'
+        'MaxSeasonalActivity',
+        'MinDailyCapacityFactor',
+        'MaxDailyCapacityFactor',
     ]
+
 
     # Empty the season reference table and add representative days back in
     curs.execute(f"DELETE FROM TimeSeason")
@@ -104,13 +107,16 @@ def process_multiday_period(database, hours):
 
     for hour in hours: curs.execute(f"INSERT INTO TimeOfDay(tod) VALUES('{hour}')")
 
+
     # Delete unnecessary days for starters
     all_days = []
     for period in df_period.index: 
         for period in period_to_days(period): all_days.append(period)
 
+    all_tables = [t[0] for t in curs.execute("SELECT name FROM sqlite_master WHERE type='table';").fetchall()]
     for table in season_tables:
-        curs.execute(f"DELETE FROM {table} WHERE season NOT IN {tuple(all_days)}")
+        if table in all_tables: curs.execute(f"DELETE FROM {table} WHERE season NOT IN {tuple(all_days)}")
+
 
     for period, weight in df_period.iterrows():
 
@@ -162,6 +168,7 @@ def process_multiday_period(database, hours):
     for table in season_tables:
         curs.execute(f"DELETE FROM {table} WHERE season NOT IN (SELECT season from TimeSeason)")
 
+
     # Renormalise DSD
     df_dsd = pd.read_sql_query("SELECT * FROM DemandSpecificDistribution", conn)
     df_dsd = df_dsd.groupby(['region','demand_name'])
@@ -171,6 +178,13 @@ def process_multiday_period(database, hours):
                     SET dsd = dsd / {total_dsd}
                     WHERE region = '{grp[0]}'
                     AND demand_name == '{grp[1]}'""")
+        
+        # If preserving absolute hourly values, adjust annual totals to sum of clustered periods
+        if utils.config['demand_preservation'] == 'hourly':
+            curs.execute(f"""UPDATE Demand SET demand = demand * {total_dsd}
+                        WHERE region = '{grp[0]}'
+                        AND demand_name == '{grp[1]}'""")
+        
             
     conn.commit()
     conn.close()
