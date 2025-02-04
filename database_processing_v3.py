@@ -7,6 +7,7 @@ import os
 import pandas as pd
 import shutil
 import utils
+import sys
 
 this_dir = os.path.realpath(os.path.dirname(__file__)) + "/"
 input_dir = this_dir + "input_sqlite/"
@@ -43,25 +44,20 @@ def init():
 
 
 def process_all():
-
     init()
-
     databases = _get_sqlite_databases()
-
-    for database in databases:
-
-        if _get_schema_version(database) < 3: continue
-
-        print(f"Processing {database}...")
-        process_database(database)
-
+    for database in databases: process_database(database)
     print("\nFinished.\n")
 
 
 
 def process_database(database: str):
 
+    if _get_schema_version(database) < 3: return
+
     init()
+
+    print(f"Processing {database}...")
 
     # Copy the input database to the output directory and connect
     shutil.copy(input_dir + f"{database}.sqlite", output_dir + f"{database}.sqlite", )
@@ -87,6 +83,10 @@ def process_multiday_period(database, hours):
 
     conn = sqlite3.connect(output_dir + f"{database}.sqlite")
     curs = conn.cursor()
+
+    # Horrible how can this curse live on
+    dsd_columns = [c[1] for c in curs.execute('PRAGMA table_info(DemandSpecificDistribution);').fetchall()]
+    dsd = 'dds' if 'dds' in dsd_columns else 'dsd'
 
     # Tables that reference time season
     season_tables = [
@@ -146,7 +146,7 @@ def process_multiday_period(database, hours):
                         VALUES('{period}', '{hour}', {weight.iloc[0] / len(hours)}, "Weight from clustering")""")
         
         curs.execute(f"""UPDATE DemandSpecificDistribution
-                    SET dsd = dsd * {weight.iloc[0]}
+                    SET {dsd} = {dsd} * {weight.iloc[0]}
                     WHERE season IN {period_days}""")
         
         # Rename days and hours
@@ -173,9 +173,9 @@ def process_multiday_period(database, hours):
     df_dsd = pd.read_sql_query("SELECT * FROM DemandSpecificDistribution", conn)
     df_dsd = df_dsd.groupby(['region','demand_name'])
     for grp in df_dsd.groups:
-        total_dsd = df_dsd.get_group(grp)['dsd'].sum()
+        total_dsd = df_dsd.get_group(grp)[dsd].sum()
         curs.execute(f"""UPDATE DemandSpecificDistribution
-                    SET dsd = dsd / {total_dsd}
+                    SET {dsd} = {dsd} / {total_dsd}
                     WHERE region = '{grp[0]}'
                     AND demand_name == '{grp[1]}'""")
         
@@ -183,7 +183,7 @@ def process_multiday_period(database, hours):
         if utils.config['demand_preservation'] == 'hourly':
             curs.execute(f"""UPDATE Demand SET demand = demand * {total_dsd}
                         WHERE region = '{grp[0]}'
-                        AND demand_name == '{grp[1]}'""")
+                        AND commodity == '{grp[1]}'""")
         
             
     conn.commit()
@@ -195,6 +195,10 @@ def process_single_day_period(database, hours):
 
     conn = sqlite3.connect(output_dir + f"{database}.sqlite")
     curs = conn.cursor()
+
+    # Horrible how can this curse live on
+    dsd_columns = [c[1] for c in curs.execute('PRAGMA table_info(DemandSpecificDistribution);').fetchall()]
+    dsd = 'dds' if 'dds' in dsd_columns else 'dsd'
 
     # Empty the season reference table and add representative days back in
     curs.execute(f"DELETE FROM TimeSeason")
@@ -213,28 +217,40 @@ def process_single_day_period(database, hours):
         
         # DemandSpecificDistribution
         curs.execute(f"""UPDATE DemandSpecificDistribution
-                    SET dsd = dsd * {weight.iloc[0]}
+                    SET {dsd} = {dsd} * {weight.iloc[0]}
                     WHERE season == '{period}'""")
 
     # Delete any seasons that aren't in the representative days
-    for table in [
+    season_tables = [
         'DemandSpecificDistribution',
         'CapacityFactorTech',
         'CapacityFactorProcess',
         'MinSeasonalActivity',
         'MaxSeasonalActivity',
-    ]:
-        curs.execute(f"DELETE FROM {table} WHERE season NOT IN (SELECT season from TimeSeason)")
+        'MinDailyCapacityFactor',
+        'MaxDailyCapacityFactor',
+    ]
+
+    all_tables = [t[0] for t in curs.execute("SELECT name FROM sqlite_master WHERE type='table';").fetchall()]
+    for table in season_tables:
+        if table in all_tables: curs.execute(f"DELETE FROM {table} WHERE season NOT IN (SELECT season from TimeSeason)")
+        
 
     # Renormalise DSD
     df_dsd = pd.read_sql_query("SELECT * FROM DemandSpecificDistribution", conn)
     df_dsd = df_dsd.groupby(['region','demand_name'])
     for grp in df_dsd.groups:
-        total_dsd = df_dsd.get_group(grp)['dsd'].sum()
+        total_dsd = df_dsd.get_group(grp)[dsd].sum()
         curs.execute(f"""UPDATE DemandSpecificDistribution
-                    SET dsd = dsd / {total_dsd}
+                    SET {dsd} = {dsd} / {total_dsd}
                     WHERE region = '{grp[0]}'
                     AND demand_name == '{grp[1]}'""")
+        
+        # If preserving absolute hourly values, adjust annual totals to sum of clustered periods
+        if utils.config['demand_preservation'] == 'hourly':
+            curs.execute(f"""UPDATE Demand SET demand = demand * {total_dsd}
+                        WHERE region = '{grp[0]}'
+                        AND commodity == '{grp[1]}'""")
 
     conn.commit()
     conn.close()
@@ -275,7 +291,6 @@ def period_to_days(period: str):
 
     if "-" not in period: return (period)
     else:
-    
         days = [utils.destringify_day(day) for day in period.split("-")]
         days = [utils.stringify_day(day) for day in range(days[0],days[1]+1,1)]
         return tuple(days)
@@ -284,4 +299,7 @@ def period_to_days(period: str):
 
 if __name__ == "__main__":
 
-    process_all()
+    if len(sys.argv) == 0: process_all()
+    else:
+        process_database(sys.argv[1])
+        print("Finished.")
