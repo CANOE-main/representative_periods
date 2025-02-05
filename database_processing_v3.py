@@ -146,7 +146,7 @@ def process_multiday_period(database, hours):
                         VALUES('{period}', '{hour}', {weight.iloc[0] / len(hours)}, "Weight from clustering")""")
         
         curs.execute(f"""UPDATE DemandSpecificDistribution
-                    SET {dsd} = {dsd} * {weight.iloc[0]}
+                    SET {dsd} = {dsd} * {weight.iloc[0]} * 365
                     WHERE season IN {period_days}""")
         
         # Rename days and hours
@@ -217,7 +217,7 @@ def process_single_day_period(database, hours):
         
         # DemandSpecificDistribution
         curs.execute(f"""UPDATE DemandSpecificDistribution
-                    SET {dsd} = {dsd} * {weight.iloc[0]}
+                    SET {dsd} = {dsd} * {weight.iloc[0]} * 365
                     WHERE season == '{period}'""")
 
     # Delete any seasons that aren't in the representative days
