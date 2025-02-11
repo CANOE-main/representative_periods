@@ -279,7 +279,9 @@ def _get_schema_version(database):
     curs = conn.cursor()
 
     tables = {t[0] for t in curs.execute("SELECT name FROM sqlite_schema").fetchall()}
-    if 'MetaData' not in tables: return 0
+    if 'MetaData' not in tables:
+        print(f"Could not get schema version for {database}. Skipped.")
+        return 0
 
     mj_vers = curs.execute("SELECT value FROM MetaData WHERE element == 'DB_MAJOR'").fetchone()[0]
 
@@ -299,7 +301,7 @@ def period_to_days(period: str):
 
 if __name__ == "__main__":
 
-    if len(sys.argv) == 0: process_all()
+    if len(sys.argv) <= 1: process_all()
     else:
         process_database(sys.argv[1])
         print("Finished.")

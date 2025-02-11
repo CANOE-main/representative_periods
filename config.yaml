@@ -1,7 +1,7 @@
 # Configuration for CANOE representative period aggregation
 
 # Can switch off plotting if not needed
-show_plots: true
+show_plots: false
 
 # Can use this to do e.g. representative day-pairs (2) or representative weeks (7)
 days_per_period: 1 # [integer]
@@ -17,7 +17,7 @@ disaggregate_multiday: true # [boolean]
 demand_preservation: 'hourly' # [str]
 
 # Final number of representative periods to apply to the database
-final_periods: 1 # [integer] -sva 12
+final_periods: 16 # [integer]
 
 # Number of representative days to test and visualise. Should be several
 # Only one (selected above) will be applied to the database
