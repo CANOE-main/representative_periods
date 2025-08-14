@@ -180,6 +180,11 @@ def cluster_days(df_timeseries: pd.DataFrame, n_periods: int) -> pd.DataFrame:
         print(df_days.head(50), '\n')
         df_days.to_csv(this_dir + "periods.csv")
 
+        # Also output the representative sequence
+        sequence = [utils.index_to_season(ts_agg.clusterCenterIndices[i]) for i in ts_agg.clusterOrder]
+        df_sequence = pd.DataFrame(index=range(len(sequence)), data=sequence, columns=['period'])
+        df_sequence.to_csv(this_dir + "sequence.csv")
+
     # Output the timeseries data for the periods selected
     df_typ_periods = ts_agg.createTypicalPeriods()
     df_typ_periods.index = df_typ_periods.index.set_levels(df_typ_periods.index.levels[0].map(lambda i: days[i]), level=0)

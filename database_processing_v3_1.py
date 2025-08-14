@@ -8,6 +8,7 @@ import pandas as pd
 import shutil
 import utils
 import sys
+import math
 
 this_dir = os.path.realpath(os.path.dirname(__file__)) + "/"
 input_dir = this_dir + "input_sqlite/"
@@ -90,11 +91,18 @@ season_tables = [
 
 def init():
 
-    global df_period, initialised
+    global df_period, df_sequence, initialised
     if initialised: return
 
     df_period = pd.read_csv(this_dir + "periods.csv", index_col=0).astype(float)
     df_period['weight'] = df_period['weight'] / df_period['weight'].sum()
+
+    df_sequence = pd.read_csv(this_dir + "sequence.csv", index_col=0)
+    change_points = df_sequence['period'] != df_sequence['period'].shift()
+    group_id = change_points.cumsum()
+    collapsed = df_sequence.groupby(group_id, as_index=False).agg({'period': 'first'})
+    collapsed['count'] = df_sequence.groupby(group_id).size().values
+    df_sequence = collapsed
 
     # Split e.g. D001-D003 into D001, D002, D003
     if utils.config['disaggregate_multiday'] and utils.config['days_per_period'] > 1:
@@ -198,8 +206,14 @@ def process_single_day_period(db_file, hours: list):
                         TimeSeason(period, sequence, season)
                         VALUES({year}, {i}, '{period}')""")
 
-            # TimeSeasonSequential
-            # TODO
+        # TimeSeasonSequential
+        print(df_sequence)
+        for i, row in df_sequence.iterrows():
+            zeros = math.floor(math.log10(len(df_sequence))) - (0 if i==0 else math.floor(math.log10(i)))
+            period_seq = f"S{'0'*zeros}{i}"
+            curs.execute(f"""REPLACE INTO
+                        TimeSeasonSequential(period, sequence, seas_seq, season, num_days, notes)
+                        VALUES({year}, {i}, '{period_seq}', '{row['period']}', {row['count']}, 'Reconstructed original year from clustering')""")
         
     # Renormalise DSD
     df_dsd = pd.read_sql_query("SELECT * FROM DemandSpecificDistribution", conn)
