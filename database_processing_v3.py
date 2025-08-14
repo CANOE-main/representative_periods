@@ -53,7 +53,7 @@ def process_all():
 
 def process_database(database: str):
 
-    if _get_schema_version(database) < 3: return
+    if _get_schema_version(database) != (3, 0): return
 
     init()
 
@@ -284,8 +284,9 @@ def _get_schema_version(database):
         return 0
 
     mj_vers = curs.execute("SELECT value FROM MetaData WHERE element == 'DB_MAJOR'").fetchone()[0]
+    mn_vers = curs.execute("SELECT value FROM MetaData WHERE element == 'DB_MINOR'").fetchone()[0]
 
-    return mj_vers
+    return mj_vers, mn_vers
 
 
 

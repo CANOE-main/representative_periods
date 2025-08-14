@@ -4,6 +4,7 @@ Runs clustering and processes all databased to selected representative periods
 
 import database_processing
 import database_processing_v3
+import database_processing_v3_1
 import clustering
 import utils
 from matplotlib import pyplot as pp
@@ -13,6 +14,7 @@ def run():
     clustering.run() # cluster periods
     database_processing.process_all() # process Temoa 2 databases
     database_processing_v3.process_all() # process Temoa 3 databases
+    database_processing_v3_1.process_all() # process Temoa 3.1 databases
 
     print("All processing completed.")
 
