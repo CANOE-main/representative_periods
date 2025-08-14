@@ -693,6 +693,187 @@ CREATE TABLE IF NOT EXISTS Operator
 REPLACE INTO Operator VALUES('e','equal to');
 REPLACE INTO Operator VALUES('le','less than or equal to');
 REPLACE INTO Operator VALUES('ge','greater than or equal to');
+CREATE TABLE IF NOT EXISTS OutputDualVariable
+(
+    scenario        TEXT,
+    constraint_name TEXT,
+    dual            REAL,
+    PRIMARY KEY (constraint_name, scenario)
+);
+CREATE TABLE IF NOT EXISTS OutputObjective
+(
+    scenario          TEXT,
+    objective_name    TEXT,
+    total_system_cost REAL
+);
+CREATE TABLE IF NOT EXISTS OutputCurtailment
+(
+    scenario    TEXT,
+    region      TEXT,
+    sector      TEXT,
+    period      INTEGER
+        REFERENCES TimePeriod (period),
+    season      TEXT
+        REFERENCES TimePeriod (period),
+    tod         TEXT
+        REFERENCES TimeOfDay (tod),
+    input_comm  TEXT
+        REFERENCES Commodity (name),
+    tech        TEXT
+        REFERENCES Technology (tech),
+    vintage     INTEGER
+        REFERENCES TimePeriod (period),
+    output_comm TEXT
+        REFERENCES Commodity (name),
+    curtailment REAL,
+    PRIMARY KEY (region, scenario, period, season, tod, input_comm, tech, vintage, output_comm)
+);
+CREATE TABLE IF NOT EXISTS OutputNetCapacity
+(
+    scenario TEXT,
+    region   TEXT,
+    sector   TEXT
+        REFERENCES SectorLabel (sector),
+    period   INTEGER
+        REFERENCES TimePeriod (period),
+    tech     TEXT
+        REFERENCES Technology (tech),
+    vintage  INTEGER
+        REFERENCES TimePeriod (period),
+    capacity REAL,
+    PRIMARY KEY (region, scenario, period, tech, vintage)
+);
+CREATE TABLE IF NOT EXISTS OutputBuiltCapacity
+(
+    scenario TEXT,
+    region   TEXT,
+    sector   TEXT
+        REFERENCES SectorLabel (sector),
+    tech     TEXT
+        REFERENCES Technology (tech),
+    vintage  INTEGER
+        REFERENCES TimePeriod (period),
+    capacity REAL,
+    PRIMARY KEY (region, scenario, tech, vintage)
+);
+CREATE TABLE IF NOT EXISTS OutputRetiredCapacity
+(
+    scenario TEXT,
+    region   TEXT,
+    sector   TEXT
+        REFERENCES SectorLabel (sector),
+    period   INTEGER
+        REFERENCES TimePeriod (period),
+    tech     TEXT
+        REFERENCES Technology (tech),
+    vintage  INTEGER
+        REFERENCES TimePeriod (period),
+    cap_eol REAL,
+    cap_early REAL,
+    PRIMARY KEY (region, scenario, period, tech, vintage)
+);
+CREATE TABLE IF NOT EXISTS OutputFlowIn
+(
+    scenario    TEXT,
+    region      TEXT,
+    sector      TEXT
+        REFERENCES SectorLabel (sector),
+    period      INTEGER
+        REFERENCES TimePeriod (period),
+    season TEXT
+        REFERENCES SeasonLabel (season),
+    tod         TEXT
+        REFERENCES TimeOfDay (tod),
+    input_comm  TEXT
+        REFERENCES Commodity (name),
+    tech        TEXT
+        REFERENCES Technology (tech),
+    vintage     INTEGER
+        REFERENCES TimePeriod (period),
+    output_comm TEXT
+        REFERENCES Commodity (name),
+    flow        REAL,
+    PRIMARY KEY (region, scenario, period, season, tod, input_comm, tech, vintage, output_comm)
+);
+CREATE TABLE IF NOT EXISTS OutputFlowOut
+(
+    scenario    TEXT,
+    region      TEXT,
+    sector      TEXT
+        REFERENCES SectorLabel (sector),
+    period      INTEGER
+        REFERENCES TimePeriod (period),
+    season TEXT
+        REFERENCES SeasonLabel (season),
+    tod         TEXT
+        REFERENCES TimeOfDay (tod),
+    input_comm  TEXT
+        REFERENCES Commodity (name),
+    tech        TEXT
+        REFERENCES Technology (tech),
+    vintage     INTEGER
+        REFERENCES TimePeriod (period),
+    output_comm TEXT
+        REFERENCES Commodity (name),
+    flow        REAL,
+    PRIMARY KEY (region, scenario, period, season, tod, input_comm, tech, vintage, output_comm)
+);
+CREATE TABLE IF NOT EXISTS OutputStorageLevel
+(
+    scenario TEXT,
+    region TEXT,
+    sector TEXT
+        REFERENCES SectorLabel (sector),
+    period INTEGER
+        REFERENCES TimePeriod (period),
+    season TEXT
+        REFERENCES SeasonLabel (season),
+    tod TEXT
+        REFERENCES TimeOfDay (tod),
+    tech TEXT
+        REFERENCES Technology (tech),
+    vintage INTEGER
+        REFERENCES TimePeriod (period),
+    level REAL,
+    PRIMARY KEY (scenario, region, period, season, tod, tech, vintage)
+);
+CREATE TABLE IF NOT EXISTS OutputEmission
+(
+    scenario  TEXT,
+    region    TEXT,
+    sector    TEXT
+        REFERENCES SectorLabel (sector),
+    period    INTEGER
+        REFERENCES TimePeriod (period),
+    emis_comm TEXT
+        REFERENCES Commodity (name),
+    tech      TEXT
+        REFERENCES Technology (tech),
+    vintage   INTEGER
+        REFERENCES TimePeriod (period),
+    emission  REAL,
+    PRIMARY KEY (region, scenario, period, emis_comm, tech, vintage)
+);
+CREATE TABLE IF NOT EXISTS OutputCost
+(
+    scenario TEXT,
+    region   TEXT,
+    sector   TEXT REFERENCES SectorLabel (sector),
+    period   INTEGER REFERENCES TimePeriod (period),
+    tech     TEXT REFERENCES Technology (tech),
+    vintage  INTEGER REFERENCES TimePeriod (period),
+    d_invest REAL,
+    d_fixed  REAL,
+    d_var    REAL,
+    d_emiss  REAL,
+    invest   REAL,
+    fixed    REAL,
+    var      REAL,
+    emiss    REAL,
+    PRIMARY KEY (scenario, region, period, tech, vintage),
+    FOREIGN KEY (vintage) REFERENCES TimePeriod (period),
+    FOREIGN KEY (tech) REFERENCES Technology (tech)
+);
 CREATE TABLE IF NOT EXISTS LimitGrowthCapacity
 (
     region TEXT,
