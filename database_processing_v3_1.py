@@ -187,9 +187,10 @@ def process_single_day_period(db_file, hours: list):
         curs.execute(f"REPLACE INTO main.{table}({cols}) SELECT {cols} FROM dbin.{table} WHERE season IN {periods}")
 
     # DemandSpecificDistribution
+    # This is renormalised to sum to 1 below
     for period, weight in df_period.iterrows():
         curs.execute(f"""UPDATE DemandSpecificDistribution
-                    SET dsd = dsd * {weight.iloc[0]} * 365
+                    SET dsd = dsd * {weight.iloc[0]}
                     WHERE season == '{period}'""")
 
     for year in utils.config['model_years']:
@@ -207,7 +208,6 @@ def process_single_day_period(db_file, hours: list):
                         VALUES({year}, {i}, '{period}')""")
 
         # TimeSeasonSequential
-        print(df_sequence)
         for i, row in df_sequence.iterrows():
             zeros = math.floor(math.log10(len(df_sequence))) - (0 if i==0 else math.floor(math.log10(i)))
             period_seq = f"S{'0'*zeros}{i}"
