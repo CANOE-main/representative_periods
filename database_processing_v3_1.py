@@ -26,7 +26,6 @@ index_tables = [
     'CommodityType',
     'Commodity',
     'Region',
-    'SeasonLabel',
     'Technology',
     'TimeOfDay',
     'TimePeriod',
@@ -86,6 +85,7 @@ season_tables = [
     'LimitSeasonalCapacityFactor',
     'LimitStorageLevelFraction',
     'ReserveCapacityDerate',
+    'SeasonLabel',
 ]
 
 
@@ -158,15 +158,23 @@ def process_database(database: str):
 
 def process_single_day_period(db_file, hours: list):
 
-    conn = sqlite3.connect(output_dir + db_file)
-    curs = conn.cursor()
-    # db_in = sqlite3.connect(input_dir + db_file)
-    conn.execute(f"ATTACH DATABASE '{input_dir + db_file}' AS dbin")
+    # Check if database exists or needs to be built
+    build_db = not os.path.exists(output_dir + db_file)
     
-    curs.executescript(open(schema, 'r').read())
-    conn.commit()
+    # Connect to the new database file
+    conn = sqlite3.connect(output_dir + db_file)
+    curs = conn.cursor() # Cursor object interacts with the sqlite db
 
-    conn.execute('PRAGMA foreign_keys = 0;')
+    # Build the database if it doesn't exist. Otherwise clear all data if forced
+    if build_db: curs.executescript(open(schema, 'r').read())
+    else:
+        tables = [t[0] for t in curs.execute("""SELECT name FROM sqlite_master WHERE type='table';""").fetchall()]
+        for table in tables: curs.execute(f"DELETE FROM '{table}'")
+        curs.executescript(open(schema, 'r').read())
+
+    conn.commit()
+    conn.execute(f"ATTACH DATABASE '{input_dir + db_file}' AS dbin") # Attach the input database
+    conn.execute('PRAGMA foreign_keys = 0;') # Turn off foreign keys while copying over
 
     in_tables = [t[0] for t in curs.execute("SELECT name FROM dbin.sqlite_master WHERE type='table';").fetchall()]
     
