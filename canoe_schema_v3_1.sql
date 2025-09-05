@@ -1580,8 +1580,6 @@ CREATE TABLE IF NOT EXISTS TimeSegmentFraction
         REFERENCES TimeOfDay (tod),
     segfrac REAL,
     notes   TEXT,
-    data_id TEXT
-        REFERENCES DataSet (data_id),
     PRIMARY KEY (period, season, tod),
     CHECK (segfrac >= 0 AND segfrac <= 1)
 );
@@ -1693,8 +1691,6 @@ CREATE TABLE IF NOT EXISTS TimeSeasonSequential
         REFERENCES SeasonLabel (season),
     num_days REAL NOT NULL,
     notes TEXT,
-    data_id TEXT
-        REFERENCES DataSet (data_id),
     PRIMARY KEY (period, sequence, seas_seq, season),
     CHECK (num_days > 0)
 );
