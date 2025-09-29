@@ -5,7 +5,6 @@ Aligns a Temoa database with representative days configured in days.csv
 import sqlite3
 import os
 import pandas as pd
-import shutil
 import utils
 import sys
 import math
@@ -20,7 +19,7 @@ df_period: pd.DataFrame
 initialised = False
 
 # Need to copy these over first (and in order)
-index_tables = [
+index_tables = {
     'DataSet',
     'DataSource',
     'CommodityType',
@@ -29,7 +28,7 @@ index_tables = [
     'Technology',
     'TimeOfDay',
     'TimePeriod',
-]
+}
 
 direct_copy_tables = {
     'CapacityCredit',
@@ -77,7 +76,7 @@ direct_copy_tables = {
 }
 
 # For season tables, only copy where the season is in the rep day set
-season_tables = [
+season_tables = {
     'DemandSpecificDistribution',
     'CapacityFactorTech',
     'CapacityFactorProcess',
@@ -86,7 +85,7 @@ season_tables = [
     'LimitStorageLevelFraction',
     'ReserveCapacityDerate',
     'SeasonLabel',
-]
+}
 
 
 def init():
