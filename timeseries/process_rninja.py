@@ -12,22 +12,22 @@ def get_csvs():
             and filename.startswith('renewables_ninja_country_CA')]
 
 csvs = [
-    'renewables_ninja_country_CA_cloud-cover_merra-2_pop-wtd.csv',
-    'renewables_ninja_country_CA_humidity_merra-2_pop-wtd.csv',
-    'renewables_ninja_country_CA_irradiance-surface_merra-2_pop-wtd.csv',
-    'renewables_ninja_country_CA_precipitation_merra-2_pop-wtd.csv',
-    'renewables_ninja_country_CA_temperature_merra-2_pop-wtd.csv',
-    'renewables_ninja_country_CA_wind-speed_merra-2_pop-wtd.csv'
+    'ninja-weather-country-CA-cloud_cover_pop_wtd-merra2.csv',
+    'ninja-weather-country-CA-humidity_pop_wtd-merra2.csv',
+    'ninja-weather-country-CA-irradiance_surface_pop_wtd-merra2.csv',
+    'ninja-weather-country-CA-precipitation_pop_wtd-merra2.csv',
+    'ninja-weather-country-CA-temperature_pop_wtd-merra2.csv',
+    'ninja-weather-country-CA-wind_speed_pop_wtd-merra2.csv'
 ]
 
 for csv in csvs:
 
-    df = pd.read_csv('renewables_ninja_country_CA_cloud-cover_merra-2_pop-wtd.csv', skiprows=3, index_col=0)['CA.ON']
+    df = pd.read_csv('timeseries/'+csv, skiprows=3, index_col=0)['CA.ON']
     df = utils.realign_timezone(df, 'UTC', 'EST')
     df = df.loc[df.index.year == 2018]
     df = df.loc[(df.index.dayofyear != 1) & (df.index.dayofyear != 365)]
 
-    name = csv.split("_")[4].replace("-","_")
+    name = csv.split("-")[4].split('_')[-3]
 
     df.name = name
 
