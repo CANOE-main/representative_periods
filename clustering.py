@@ -3,6 +3,7 @@ import matplotlib.pyplot as pp
 import feature_selection as fi
 import tsam.timeseriesaggregation as tsam
 import utils
+import pca
 import os
 
 this_dir = os.path.realpath(os.path.dirname(__file__)) + "/"
@@ -50,9 +51,30 @@ def run(show_plots=False):
     # Get selected timeseries to cluster over
     df_timeseries = collect_timeseries()
 
-    print("Clustering over timeseries:\n")
+    if utils.config['use_pca']:
+        # Using PCA to get principal components first, then clustering over those
+        print("Input timeseries to PCA:\n")
+        print(df_timeseries)
+        df_pca = pca.get_principal_components(df_timeseries, utils.config['pca_groups'])
+        print("Clustering over principal components:\n")
+        print(df_pca)
 
-    print(df_timeseries) # display chosen timeseries for error catching
+        df_ts_std = pca.standardise(df_timeseries)
+
+        for group in utils.config['pca_groups']:
+            pp.figure()
+            pp.title(f"principal components for {group['name']}")
+            pp.xlabel('time (h)')
+            for ts in group['columns']:
+                pp.plot(df_ts_std[ts], label=ts)
+            for col in df_pca.columns:
+                if col.split('_')[0] == group['name']:
+                    pp.plot(df_pca[col], linewidth=4, label=col)
+            pp.legend()
+    else:
+        # Clustering directly on input timeseries
+        print("Clustering over timeseries:\n")
+        print(df_timeseries)
 
     # Get the list of test numbers of periods for plotting
     test_periods = set(utils.config['test_periods']) if utils.config['test_periods'] is not None else set()
@@ -75,15 +97,22 @@ def run(show_plots=False):
         ts_figs[ts], ts_axes[ts] = pp.subplots(figsize = [10, 6], dpi = 100, nrows = 1, ncols = 1)
         df_timeseries[ts].reset_index(drop=True).plot(label='original', lw=2, style='b-', ax=ts_axes[ts])
         ts_axes[ts].set_title(f"timeseries of original {ts} and weighted representative periods")
-        ts_axes[ts].set_xlabel('duration (h)')
+        ts_axes[ts].set_xlabel('time (h)')
         ts_axes[ts].set_ylabel(ts)
 
     # Plot each set of test periods on both figures going from red -> blue with increasing n periods. Green if final number of periods
     colour = [1, 0, 0]
     for n_periods in test_periods:
 
-        df_predicted = cluster_days(df_timeseries=df_timeseries, n_periods=n_periods)
-        if df_predicted is None: continue
+        if utils.config['use_pca']: df_predicted, sequence = cluster_days(df_timeseries=df_pca, n_periods=n_periods)
+        else: df_predicted, sequence = cluster_days(df_timeseries=df_timeseries, n_periods=n_periods)
+        if df_predicted is None: continue # How does this happen?
+
+        if utils.config['use_pca']:
+            # Have to manually reconstruct the representative timeseries because TSAM only ever saw principal components
+            data = []
+            for d in sequence: data.extend(df_timeseries.values[d*24:d*24+24])
+            df_predicted = pd.DataFrame(columns=df_timeseries.columns, data=data, index=df_timeseries.index)
 
         for ts in df_timeseries.columns:
             if n_periods == utils.config['final_periods']:
@@ -174,6 +203,8 @@ def cluster_days(df_timeseries: pd.DataFrame, n_periods: int) -> pd.DataFrame:
     df_days = pd.DataFrame(index=days, data=weights.values(), columns=['weight']).sort_index()
     df_days.to_csv(out_data + "representative_periods/" + csv_name)
 
+    sequence = [ts_agg.clusterCenterIndices[i] for i in ts_agg.clusterOrder]
+
     # For the final number of periods, output to periods.csv for database processing
     if n_periods == utils.config['final_periods']:
         print("\nOutput representative periods:\n")
@@ -181,8 +212,8 @@ def cluster_days(df_timeseries: pd.DataFrame, n_periods: int) -> pd.DataFrame:
         df_days.to_csv(this_dir + "periods.csv")
 
         # Also output the representative sequence
-        sequence = [utils.index_to_season(ts_agg.clusterCenterIndices[i]) for i in ts_agg.clusterOrder]
-        df_sequence = pd.DataFrame(index=range(len(sequence)), data=sequence, columns=['period'])
+        day_sequence = [utils.index_to_season(i) for i in sequence]
+        df_sequence = pd.DataFrame(index=range(len(day_sequence)), data=day_sequence, columns=['period'])
         df_sequence.to_csv(this_dir + "sequence.csv")
 
     # Output the timeseries data for the periods selected
@@ -199,7 +230,7 @@ def cluster_days(df_timeseries: pd.DataFrame, n_periods: int) -> pd.DataFrame:
     df_predicted = ts_agg.predictOriginalData()
     df_predicted.to_csv(out_data + "recreated_timeseries/" + csv_name)
     
-    return df_predicted
+    return df_predicted, sequence
 
 
 
@@ -207,6 +238,7 @@ def cluster_days(df_timeseries: pd.DataFrame, n_periods: int) -> pd.DataFrame:
 def collect_timeseries() -> pd.DataFrame:
 
     dfs = []
+    cols = []
     files = get_all_files() # gets a list of paths to selected timeseries csv files
 
     for path in files:
@@ -214,10 +246,12 @@ def collect_timeseries() -> pd.DataFrame:
         file = this_dir + "/".join(path) + '.csv' # turn path list into actual file path
         df = pd.read_csv(file, index_col=0).astype(float)
         df.index = range(len(df.index))
+        cols.append(file.split('/')[-1].split('.')[0])
         dfs.append(df) # read the csv and add to the list
 
     # Concatenate all found csv files into a single dataframe for TSAM
     df_timeseries = pd.concat(dfs, axis='columns')
+    df_timeseries.columns = cols
     return df_timeseries
 
 
