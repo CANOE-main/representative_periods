@@ -32,19 +32,66 @@ test_periods: # [list[integer]]
 # Principal component analysis
 use_pca: true
 pca_groups:
-  - name: 'weather'
+  - name: 'wind_west'
     columns:
-      - cloud_cover
-      - irradiance_surface
-      - wind_speed
-      - precipitation
-      - temperature
-      - humidity
+        - ab_wind_speed
+        - bc_wind_speed
+        - mb_wind_speed
+        - sk_wind_speed
     n_components: 2
-  - name: 'load'
+  - name: 'solar_west'
     columns:
-      - load
-      - net_load
+      - ab_irradiance_surface 
+      - bc_irradiance_surface 
+      - mb_irradiance_surface 
+      - sk_irradiance_surface
+    n_components: 1
+  - name: 'real_feel_west'
+    columns:
+      - ab_humidity 
+      - bc_humidity 
+      - mb_humidity 
+      - sk_humidity 
+      - ab_temperature 
+      - bc_temperature 
+      - mb_temperature 
+      - sk_temperature 
+    n_components: 2
+  - name: 'wind_east'
+    columns:
+      - nb_wind_speed 
+      - nllab_wind_speed 
+      - ns_wind_speed 
+      - on_wind_speed 
+      - pei_wind_speed 
+      - qc_wind_speed
+    n_components: 2
+  - name: 'solar_east'
+    columns:
+      - nb_irradiance_surface 
+      - nllab_irradiance_surface 
+      - ns_irradiance_surface 
+      - on_irradiance_surface 
+      - pei_irradiance_surface 
+      - qc_irradiance_surface 
+    n_components: 1
+  - name: 'real_feel_east'
+    columns:
+      - nb_humidity 
+      - nllab_humidity 
+      - ns_humidity 
+      - on_humidity 
+      - pei_humidity 
+      - qc_humidity 
+      - nb_temperature 
+      - nllab_temperature 
+      - ns_temperature 
+      - on_temperature 
+      - pei_temperature 
+      - qc_temperature 
+    n_components: 2
+  - name: 'ldv'
+    columns:
       - ldv_charging
     n_components: 1
 
@@ -89,17 +136,67 @@ clustering_method: hierarchical # [string]
 # files to be clustered over. Final csv files should be in list form. Do not nest
 # further dictionaries within final lists.
 timeseries: # [dict[dict[...[list[string]]]]]
+  ab:
+    - ab_irradiance_surface # solar irradiance at surface
+    - ab_humidity # humidity
+    - ab_temperature # temperature
+    - ab_wind_speed # wind speed
+  bc:
+    - bc_irradiance_surface # solar irradiance at surface
+    - bc_humidity # humidity
+    - bc_temperature # temperature
+    - bc_wind_speed # wind speed
+  mb:
+    - mb_irradiance_surface # solar irradiance at surface
+    - mb_humidity # humidity
+    - mb_temperature # temperature
+    - mb_wind_speed # wind speed
+  nb:
+    - nb_irradiance_surface # solar irradiance at surface
+    - nb_humidity # humidity
+    - nb_temperature # temperature
+    - nb_wind_speed # wind speed
+  nllab:
+    - nllab_irradiance_surface # solar irradiance at surface
+    - nllab_humidity # humidity
+    - nllab_temperature # temperature
+    - nllab_wind_speed # wind speed
+  ns:
+    - ns_irradiance_surface # solar irradiance at surface
+    - ns_humidity # humidity
+    - ns_temperature # temperature
+    - ns_wind_speed # wind speed
+  'on':
+    - on_irradiance_surface # solar irradiance at surface
+    - on_humidity # humidity
+    - on_temperature # temperature
+    - on_wind_speed # wind speed
+  pei:
+    - pei_irradiance_surface # solar irradiance at surface
+    - pei_humidity # humidity
+    - pei_temperature # temperature
+    - pei_wind_speed # wind speed
+  qc:
+    - qc_irradiance_surface # solar irradiance at surface
+    - qc_humidity # humidity
+    - qc_temperature # temperature
+    - qc_wind_speed # wind speed
+  sk:
+    - sk_irradiance_surface # solar irradiance at surface
+    - sk_humidity # humidity
+    - sk_temperature # temperature
+    - sk_wind_speed # wind speed
   ontario: # all are population-weighted
     # - cf_hydro # capacity factor of existing hydroelectric (daily and run-of-river)
     # - cf_solar # capacity factor of existing solar PV
     # - cf_wind # capacity factor of existing onshore wind
     # - cf_new_solar # capacity factor of new solar PV
     # - cf_new_wind # capacity factor of new onshore wind
-    - cloud_cover # percentage cloud cover (fraction covered)
-    - humidity # relative humidity
-    - irradiance_surface # solar irradiance at surface
+    # - cloud_cover # percentage cloud cover (fraction covered)
+    # - humidity # relative humidity
+    # - irradiance_surface # solar irradiance at surface
     - ldv_charging # demand for electricity for light duty vehicle charging
-    - load # historical demand for electricity within the province of Ontario
+    # - load # historical demand for electricity within the province of Ontario
     # - load_2021
     # - load_2025
     # - load_2030
@@ -108,10 +205,10 @@ timeseries: # [dict[dict[...[list[string]]]]]
     # - load_2045
     # - load_2050
     # - market_demand # market demand for electricity, including exchange along regional interties
-    - precipitation # precipitation
-    - temperature # temperature
-    - wind_speed # wind speed
-    - net_load
+    # - humidity # humidity
+    # - temperature # temperature
+    # - wind_speed # wind speed
+    # - net_load
     # - synthetic_net_load_ws # load * (1 - 0.3*cf_new_wind - 0.15*cf_new_solar)
   temoa-canada:
     #- random # random numbers 0-1

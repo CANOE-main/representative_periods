@@ -68,7 +68,7 @@ def run(show_plots=False):
             for ts in group['columns']:
                 pp.plot(df_ts_std[ts], label=ts)
             for col in df_pca.columns:
-                if col.split('_')[0] == group['name']:
+                if col.split('_pc')[0] == group['name']:
                     pp.plot(df_pca[col], linewidth=4, label=col)
             pp.legend()
     else:

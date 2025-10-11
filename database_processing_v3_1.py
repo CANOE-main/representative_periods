@@ -138,16 +138,13 @@ def process_database(database: str):
 
     print(f"Processing {database}...")
 
-    # Get database files
-    db_file = f"{database}.sqlite"
-
     if utils.config['disaggregate_multiday']: n_hours = 24
     else: n_hours = 24*utils.config['days_per_period']
     
     if n_hours < 100: hours = [utils.stringify_hour(hour+1) for hour in range(n_hours)]
     else: hours = [utils.stringify_day(hour+1).replace("D","H") for hour in range(n_hours)]
 
-    if utils.config['days_per_period'] == 1 or utils.config['disaggregate_multiday']: process_single_day_period(db_file, hours)
+    if utils.config['days_per_period'] == 1 or utils.config['disaggregate_multiday']: process_single_day_period(database, hours)
     elif utils.config['days_per_period'] > 1:
         print("Multiday periods are not currently supported by Temoa. Turn on dissaggregate_multiday.")
         return
@@ -155,13 +152,15 @@ def process_database(database: str):
 
 
 
-def process_single_day_period(db_file, hours: list):
+def process_single_day_period(database: str, hours: list):
+
+    out_file = output_dir + database + f"_{len(df_period)}d.sqlite"
 
     # Check if database exists or needs to be built
-    build_db = not os.path.exists(output_dir + db_file)
+    build_db = not os.path.exists(out_file)
     
     # Connect to the new database file
-    conn = sqlite3.connect(output_dir + db_file)
+    conn = sqlite3.connect(out_file)
     curs = conn.cursor() # Cursor object interacts with the sqlite db
 
     # Build the database if it doesn't exist. Otherwise clear all data if forced
@@ -172,7 +171,7 @@ def process_single_day_period(db_file, hours: list):
         curs.executescript(open(schema, 'r').read())
 
     conn.commit()
-    conn.execute(f"ATTACH DATABASE '{input_dir + db_file}' AS dbin") # Attach the input database
+    conn.execute(f"ATTACH DATABASE '{input_dir + database + ".sqlite"}' AS dbin") # Attach the input database
     conn.execute('PRAGMA foreign_keys = 0;') # Turn off foreign keys while copying over
 
     in_tables = [t[0] for t in curs.execute("SELECT name FROM dbin.sqlite_master WHERE type='table';").fetchall()]
@@ -248,12 +247,12 @@ def process_single_day_period(db_file, hours: list):
     try:
         data = conn.execute('PRAGMA FOREIGN_KEY_CHECK;').fetchall()
         if data:
-            print(f'The following foreign keys failed to validate for {db_file}:')
-            print('(Table, Row ID, Reference Table, (fkid) )')
             for row in data:
                 print(f'{row}')
+            print('(Table, Row ID, Reference Table, (fkid) )')
+            print(f'The above foreign keys failed to validate for {out_file}')
     except sqlite3.OperationalError as e:
-        print(f'Foreign keys failed on activation for {db_file}. Something may be wrong with the schema.')
+        print(f'Foreign keys failed on activation for {out_file}. Something may be wrong with the schema.')
         print(e)
 
     conn.close()

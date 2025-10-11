@@ -127,7 +127,7 @@ def get_principal_components(df: pd.DataFrame, groups: list[Dict]) -> pd.DataFra
 
         X = df[cols].copy().interpolate('linear')
 
-        # No imputation allowed; check for NaNs
+        # Check for NaNs
         if X.isna().any().any():
             na_cols = [c for c in cols if X[c].isna().any()]
             raise ValueError(
@@ -149,6 +149,7 @@ def get_principal_components(df: pd.DataFrame, groups: list[Dict]) -> pd.DataFra
 
     if not out_parts:
         # Return empty frame with same index if nothing computed
+        print(f"Got no PCs for {name}")
         return pd.DataFrame(index=df.index)
 
     return pd.concat(out_parts, axis=1)
