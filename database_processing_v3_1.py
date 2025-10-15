@@ -93,8 +93,7 @@ def init():
     global df_period, df_sequence, initialised
     if initialised: return
 
-    df_period = pd.read_csv(this_dir + "periods.csv", index_col=0).astype(float)
-    df_period['weight'] = df_period['weight'] / df_period['weight'].sum()
+    df_period = pd.read_csv(this_dir + "periods.csv", index_col=0)
 
     df_sequence = pd.read_csv(this_dir + "sequence.csv", index_col=0)
     change_points = df_sequence['period'] != df_sequence['period'].shift()
@@ -171,7 +170,7 @@ def process_single_day_period(database: str, hours: list):
         curs.executescript(open(schema, 'r').read())
 
     conn.commit()
-    conn.execute(f"ATTACH DATABASE '{input_dir + database + ".sqlite"}' AS dbin") # Attach the input database
+    conn.execute(f"ATTACH DATABASE '{input_dir + database + '.sqlite'}' AS dbin") # Attach the input database
     conn.execute('PRAGMA foreign_keys = 0;') # Turn off foreign keys while copying over
 
     in_tables = [t[0] for t in curs.execute("SELECT name FROM dbin.sqlite_master WHERE type='table';").fetchall()]
@@ -192,12 +191,8 @@ def process_single_day_period(database: str, hours: list):
         cols = str([row[1] for row in curs.execute(f"PRAGMA table_info({table})").fetchall()])[1:-1].replace("'","")
         curs.execute(f"REPLACE INTO main.{table}({cols}) SELECT {cols} FROM dbin.{table} WHERE season IN {periods}")
 
-    # DemandSpecificDistribution
-    # This is renormalised to sum to 1 below
-    for period, weight in df_period.iterrows():
-        curs.execute(f"""UPDATE DemandSpecificDistribution
-                    SET dsd = dsd * {weight.iloc[0]}
-                    WHERE season == '{period}'""")
+    total_days = df_period['weight'].sum()
+    curs.execute(f"REPLACE INTO MetaData VALUES('days_per_period', {total_days}, 'count of days in each period')")
 
     for year in utils.config['model_years']:
         for i, (period, weight) in enumerate(df_period.iterrows()):
@@ -206,7 +201,7 @@ def process_single_day_period(database: str, hours: list):
                 # TimeSegmentFraction
                 curs.execute(f"""REPLACE INTO
                             TimeSegmentFraction(period, season, tod, segfrac, notes)
-                            VALUES({year}, '{period}', '{hour}', {weight.iloc[0] / 24}, "Weight from clustering")""")
+                            VALUES({year}, '{period}', '{hour}', {weight.iloc[0] / (24 * total_days)}, "Weight from clustering")""")
             
             # TimeSeason
             curs.execute(f"""REPLACE INTO
@@ -220,23 +215,36 @@ def process_single_day_period(database: str, hours: list):
             curs.execute(f"""REPLACE INTO
                         TimeSeasonSequential(period, sequence, seas_seq, season, num_days, notes)
                         VALUES({year}, {i}, '{period_seq}', '{row['period']}', {row['count']}, 'Reconstructed original year from clustering')""")
+            
+    # TimeOfDay
+    for h in range(24):
+        tod = f"H0{h+1}" if h+1 < 10 else f"H{h+1}"
+        curs.execute(f'REPLACE INTO TimeOfDay(sequence, tod) VALUES({h+1}, "{tod}")')
+
+    # DemandSpecificDistribution
+    # This is renormalised to sum to 1 below
+    for period, weight in df_period.iterrows():
+        curs.execute(f"""UPDATE DemandSpecificDistribution
+                    SET dsd = dsd * {weight.iloc[0]}
+                    WHERE season == '{period}'""")
         
     # Renormalise DSD
     df_dsd = pd.read_sql_query("SELECT * FROM DemandSpecificDistribution", conn)
-    df_dsd = df_dsd.groupby(['period','region','demand_name'])
+    df_dsd = df_dsd.groupby(['region','period','demand_name'])
     for grp in df_dsd.groups:
         total_dsd = df_dsd.get_group(grp)['dsd'].sum()
         curs.execute(f"""UPDATE DemandSpecificDistribution
                     SET dsd = dsd / {total_dsd}
-                    WHERE period = '{grp[0]}'
-                    AND region = '{grp[1]}'
+                    WHERE region = '{grp[0]}'
+                    AND period = '{grp[1]}'
                     AND demand_name == '{grp[2]}'""")
         
-        # If preserving absolute hourly values, adjust annual totals to sum of clustered periods
+        # If preserving absolute hourly values, adjust annual demand to sum of representative periods
         if utils.config['demand_preservation'] == 'hourly':
             curs.execute(f"""UPDATE Demand SET demand = demand * {total_dsd}
                         WHERE region = '{grp[0]}'
-                        AND commodity == '{grp[1]}'""")
+                        AND period = '{grp[1]}'
+                        AND commodity == '{grp[2]}'""")
 
     conn.commit()
 
