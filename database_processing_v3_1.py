@@ -10,8 +10,8 @@ import sys
 import math
 
 this_dir = os.path.realpath(os.path.dirname(__file__)) + "/"
-input_dir = this_dir + "input_sqlite/"
-output_dir = this_dir + "output_sqlite/"
+input_dir = "C:/Users/David/Downloads/dbs_2/models/" #input_dir = this_dir + "input_sqlite/"
+output_dir = "C:/Users/David/Downloads/dbs_2/reduced_models/" #this_dir + "output_sqlite/"
 
 schema = this_dir + "canoe_schema_v3_1.sql"
 
@@ -231,16 +231,16 @@ def process_single_day_period(database: str, hours: list):
     # Renormalise DSD
     df_dsd = pd.read_sql_query("SELECT * FROM DemandSpecificDistribution", conn)
     df_dsd = df_dsd.groupby(['region','period','demand_name'])
-    for grp in df_dsd.groups:
+    for rpd in df_dsd.groups:
 
         # Drop threshold lower percentile
-        df = df_dsd.get_group(grp).sort_values('dsd').reset_index()
+        df = df_dsd.get_group(rpd).sort_values('dsd').reset_index()
 
         # This is a safety net for low numbers of clusters where you might catch
         # a day with zero demand throughout, which is not normalisable
         if df['dsd'].sum() == 0:
             print(
-                f"There was no DSD remaining for demand {grp}! "
+                f"There was no DSD remaining for demand {rpd}! "
                 "Filling with flatline demand for now but different periods "
                 "should be used!"
             )
@@ -249,21 +249,26 @@ def process_single_day_period(database: str, hours: list):
             curs.execute(
                 f"""UPDATE DemandSpecificDistribution 
                 SET dsd = {flatline_fill}
-                WHERE region = '{grp[0]}' 
-                AND period = '{grp[1]}' 
-                AND demand_name == '{grp[2]}'"""
+                WHERE region = '{rpd[0]}' 
+                AND period = '{rpd[1]}' 
+                AND demand_name == '{rpd[2]}'"""
             )
 
+        # Get a running proportion sum of DSD
         df['run_sum'] = df['dsd'].cumsum()/df['dsd'].sum()
-        df['dsd'] = df['dsd'].where(df['run_sum'] >= utils.config['dsd_threshold'], 0)
-        thresh_dsd = df['dsd'].loc[df['dsd'] > 0].min()
+        # Get the smallest DSD above thresh to zero out actual table
+        thresh_dsd = df['dsd'].loc[df['run_sum'] < utils.config['dsd_threshold']].max()
+        # Set to zero where the proportion exceeds the threshold
+        # If there are duplicate dsd values on the threshold these are all left in
+        # This leaves everything in in the case of a flatline demand
+        df['dsd'] = df['dsd'].where(df['dsd'] >= thresh_dsd, 0)
         
         curs.execute(
             f"""UPDATE DemandSpecificDistribution 
             SET dsd = 0 
-            WHERE region = '{grp[0]}' 
-            AND period = '{grp[1]}' 
-            AND demand_name == '{grp[2]}' 
+            WHERE region = '{rpd[0]}' 
+            AND period = '{rpd[1]}' 
+            AND demand_name == '{rpd[2]}' 
             AND dsd < {thresh_dsd}"""
         )
 
@@ -271,16 +276,16 @@ def process_single_day_period(database: str, hours: list):
         total_dsd = df['dsd'].sum()
         curs.execute(f"""UPDATE DemandSpecificDistribution
                     SET dsd = dsd / {total_dsd}
-                    WHERE region = '{grp[0]}'
-                    AND period = '{grp[1]}'
-                    AND demand_name == '{grp[2]}'""")
+                    WHERE region = '{rpd[0]}'
+                    AND period = '{rpd[1]}'
+                    AND demand_name == '{rpd[2]}'""")
         
         # If preserving absolute hourly values, adjust annual demand to sum of representative periods
         if utils.config['demand_preservation'] == 'hourly':
             curs.execute(f"""UPDATE Demand SET demand = demand * {total_dsd}
-                        WHERE region = '{grp[0]}'
-                        AND period = '{grp[1]}'
-                        AND commodity == '{grp[2]}'""")
+                        WHERE region = '{rpd[0]}'
+                        AND period = '{rpd[1]}'
+                        AND commodity == '{rpd[2]}'""")
 
     conn.commit()
 
