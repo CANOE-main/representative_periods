@@ -232,7 +232,13 @@ def process_single_day_period(database: str, hours: list):
     df_dsd = pd.read_sql_query("SELECT * FROM DemandSpecificDistribution", conn)
     df_dsd = df_dsd.groupby(['region','period','demand_name'])
     for grp in df_dsd.groups:
-        total_dsd = df_dsd.get_group(grp)['dsd'].sum()
+
+        # Drop threshold lower percentile and renormalise
+        df = df_dsd.get_group(grp).sort_values('dsd')
+        df['run_sum'] = df['dsd'].cumsum()/df['dsd'].sum()
+        df['dsd'] = df['dsd'].where(df['run_sum'] >= utils.config['dsd_threshold'], 0)
+
+        total_dsd = df['dsd'].sum()
         curs.execute(f"""UPDATE DemandSpecificDistribution
                     SET dsd = dsd / {total_dsd}
                     WHERE region = '{grp[0]}'
