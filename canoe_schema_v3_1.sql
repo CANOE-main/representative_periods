@@ -1144,7 +1144,7 @@ CREATE TABLE IF NOT EXISTS LimitAnnualCapacityFactor
     FOREIGN KEY (data_source) REFERENCES DataSource (source_id),
     FOREIGN KEY (tech) REFERENCES Technology (tech),
     FOREIGN KEY (output_comm) REFERENCES Commodity (name),
-    PRIMARY KEY (region, period, tech, operator),
+    PRIMARY KEY (region, period, tech, output_comm, operator),
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE IF NOT EXISTS LimitCapacity
