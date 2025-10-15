@@ -233,11 +233,41 @@ def process_single_day_period(database: str, hours: list):
     df_dsd = df_dsd.groupby(['region','period','demand_name'])
     for grp in df_dsd.groups:
 
-        # Drop threshold lower percentile and renormalise
-        df = df_dsd.get_group(grp).sort_values('dsd')
+        # Drop threshold lower percentile
+        df = df_dsd.get_group(grp).sort_values('dsd').reset_index()
+
+        # This is a safety net for low numbers of clusters where you might catch
+        # a day with zero demand throughout, which is not normalisable
+        if df['dsd'].sum() == 0:
+            print(
+                f"There was no DSD remaining for demand {grp}! "
+                "Filling with flatline demand for now but different periods "
+                "should be used!"
+            )
+            flatline_fill = 1 / len(df)
+            df['dsd'] = flatline_fill
+            curs.execute(
+                f"""UPDATE DemandSpecificDistribution 
+                SET dsd = {flatline_fill}
+                WHERE region = '{grp[0]}' 
+                AND period = '{grp[1]}' 
+                AND demand_name == '{grp[2]}'"""
+            )
+
         df['run_sum'] = df['dsd'].cumsum()/df['dsd'].sum()
         df['dsd'] = df['dsd'].where(df['run_sum'] >= utils.config['dsd_threshold'], 0)
+        thresh_dsd = df['dsd'].loc[df['dsd'] > 0].min()
+        
+        curs.execute(
+            f"""UPDATE DemandSpecificDistribution 
+            SET dsd = 0 
+            WHERE region = '{grp[0]}' 
+            AND period = '{grp[1]}' 
+            AND demand_name == '{grp[2]}' 
+            AND dsd < {thresh_dsd}"""
+        )
 
+        # Renormalise
         total_dsd = df['dsd'].sum()
         curs.execute(f"""UPDATE DemandSpecificDistribution
                     SET dsd = dsd / {total_dsd}
