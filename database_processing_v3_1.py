@@ -10,8 +10,8 @@ import sys
 import math
 
 this_dir = os.path.realpath(os.path.dirname(__file__)) + "/"
-input_dir = "C:/Users/David/Downloads/dbs_2/models/" #input_dir = this_dir + "input_sqlite/"
-output_dir = "C:/Users/David/Downloads/dbs_2/reduced_models/" #this_dir + "output_sqlite/"
+input_dir = input_dir = this_dir + "input_sqlite/"
+output_dir = this_dir + "output_sqlite/"
 
 schema = this_dir + "canoe_schema_v3_1.sql"
 
