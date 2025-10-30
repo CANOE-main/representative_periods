@@ -258,19 +258,22 @@ def process_single_day_period(database: str, hours: list):
         df['run_sum'] = df['dsd'].cumsum()/df['dsd'].sum()
         # Get the smallest DSD above thresh to zero out actual table
         thresh_dsd = df['dsd'].loc[df['run_sum'] < utils.config['dsd_threshold']].max()
-        # Set to zero where the proportion exceeds the threshold
-        # If there are duplicate dsd values on the threshold these are all left in
-        # This leaves everything in in the case of a flatline demand
-        df['dsd'] = df['dsd'].where(df['dsd'] >= thresh_dsd, 0)
         
-        curs.execute(
-            f"""UPDATE DemandSpecificDistribution 
-            SET dsd = 0 
-            WHERE region = '{rpd[0]}' 
-            AND period = '{rpd[1]}' 
-            AND demand_name == '{rpd[2]}' 
-            AND dsd < {thresh_dsd}"""
-        )
+        # There might be nothing under the threshold if using few rep days
+        if not pd.isna(thresh_dsd):
+            # Set to zero where the proportion exceeds the threshold
+            # If there are duplicate dsd values on the threshold these are all left in
+            # This leaves everything in in the case of a flatline demand
+            df['dsd'] = df['dsd'].where(df['dsd'] >= thresh_dsd, 0)
+            
+            curs.execute(
+                f"""UPDATE DemandSpecificDistribution 
+                SET dsd = 0 
+                WHERE region = '{rpd[0]}' 
+                AND period = '{rpd[1]}' 
+                AND demand_name == '{rpd[2]}' 
+                AND dsd < {thresh_dsd}"""
+            )
 
         # Renormalise
         total_dsd = df['dsd'].sum()
