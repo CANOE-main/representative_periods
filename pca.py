@@ -49,7 +49,7 @@ def standardise(X: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series, pd.Series]:
 
 
 def _pca_scores_via_svd(X: np.ndarray, k: int) -> tuple[np.ndarray, np.ndarray]:
-    """Compute first k principal component scores and loading via SVD.
+    """Compute first k principal component scores and loading via SVDsdsdsd.
 
     X should already be centered (and scaled if desired).
     Returns (scores, loadings) where:
