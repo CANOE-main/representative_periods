@@ -37,22 +37,16 @@ test_periods: # [list[integer]]
 # Principal component analysis
 use_pca: true
 pca_groups:
-  - name: 'wind_west'
+  - name: 'weather'
     columns:
-        - ab_wind_speed
-        - bc_wind_speed
-        - mb_wind_speed
-        - sk_wind_speed
-    n_components: 2
-  - name: 'solar_west'
-    columns:
+      - ab_wind_speed
+      - bc_wind_speed
+      - mb_wind_speed
+      - sk_wind_speed
       - ab_irradiance_surface 
       - bc_irradiance_surface 
       - mb_irradiance_surface 
       - sk_irradiance_surface
-    n_components: 1
-  - name: 'real_feel_west'
-    columns:
       - ab_humidity 
       - bc_humidity 
       - mb_humidity 
@@ -61,27 +55,18 @@ pca_groups:
       - bc_temperature 
       - mb_temperature 
       - sk_temperature 
-    n_components: 2
-  - name: 'wind_east'
-    columns:
       - nb_wind_speed 
       - nllab_wind_speed 
       - ns_wind_speed 
       - on_wind_speed 
       - pei_wind_speed 
       - qc_wind_speed
-    n_components: 2
-  - name: 'solar_east'
-    columns:
       - nb_irradiance_surface 
       - nllab_irradiance_surface 
       - ns_irradiance_surface 
       - on_irradiance_surface 
       - pei_irradiance_surface 
       - qc_irradiance_surface 
-    n_components: 1
-  - name: 'real_feel_east'
-    columns:
       - nb_humidity 
       - nllab_humidity 
       - ns_humidity 
@@ -93,12 +78,8 @@ pca_groups:
       - ns_temperature 
       - on_temperature 
       - pei_temperature 
-      - qc_temperature 
-    n_components: 2
-  - name: 'ldv'
-    columns:
-      - ldv_charging
-    n_components: 1
+      - qc_temperature
+    n_components: 6
 
 # Which days to force as cluster centres
 # TSAM will perform clustering then recalculate clusters with these new centres,
