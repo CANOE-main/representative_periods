@@ -87,7 +87,7 @@ pca_groups:
 force_days: # [list[integer]]
   #- 185
 
-# Configures TSAM autoselection of ectreme periods
+# Configures TSAM autoselection of extreme periods
 # Under each type, add a list of the names of timeseries vectors being clustered over
 # which should apply that extreme period selection
 extreme_periods: # dict[list[str]]
