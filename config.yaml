@@ -1,7 +1,7 @@
 # Configuration for CANOE representative period aggregation
 
 # Can switch off plotting if not needed
-show_plots: true
+show_plots: false
 
 # Can use this to do e.g. representative day-pairs (2) or representative weeks (7)
 days_per_period: 1 # [integer]
@@ -14,70 +14,73 @@ disaggregate_multiday: true # [boolean] MUST BE TRUE FOR NOW
 # Should we preserve hourly demand values or annual totals in absolute terms?
 # The clustering reduces the number of days and renormalises DSDs so can't preserve both
 # 'hourly' or 'annual'
-demand_preservation: 'hourly' # [str]
+demand_preservation: "hourly" # [str]
 
 # This bottom percentile of DSDs is set to zero. Nice robust way to remove
-# all tiny DSDs while ensuring that error is small. If preserving hourly 
+# all tiny DSDs while ensuring that error is small. If preserving hourly
 # demands, the annual total demand will be reduced by this factor.
-dsd_threshold: 0.01
+dsd_threshold: 0.001
 
 # Final number of representative periods to apply to the database
-final_periods: 16 # [integer]
+final_periods: 64 # [integer]
 
 # Number of representative days to test and visualise. Should be several
 # Only one (selected above) will be applied to the database
 test_periods: # [list[integer]]
-  - 1
-  - 2
-  - 4
-  - 8
-  - 16
-  - 32
+  # - 1
+  # - 2
+  # - 4
+  # - 8
+  # - 16
+  # - 32
+  - 64
+  - 128
+  - 363
 
 # Principal component analysis
 use_pca: true
 pca_groups:
-  - name: 'weather'
+  - name: "weather"
     columns:
       - ab_wind_speed
       - bc_wind_speed
       - mb_wind_speed
       - sk_wind_speed
-      - ab_irradiance_surface 
-      - bc_irradiance_surface 
-      - mb_irradiance_surface 
+      - ab_irradiance_surface
+      - bc_irradiance_surface
+      - mb_irradiance_surface
       - sk_irradiance_surface
-      - ab_humidity 
-      - bc_humidity 
-      - mb_humidity 
-      - sk_humidity 
-      - ab_temperature 
-      - bc_temperature 
-      - mb_temperature 
-      - sk_temperature 
-      - nb_wind_speed 
-      - nllab_wind_speed 
-      - ns_wind_speed 
-      - on_wind_speed 
-      - pei_wind_speed 
+      - ab_humidity
+      - bc_humidity
+      - mb_humidity
+      - sk_humidity
+      - ab_temperature
+      - bc_temperature
+      - mb_temperature
+      - sk_temperature
+      - nb_wind_speed
+      - nllab_wind_speed
+      - ns_wind_speed
+      - on_wind_speed
+      - pei_wind_speed
       - qc_wind_speed
-      - nb_irradiance_surface 
-      - nllab_irradiance_surface 
-      - ns_irradiance_surface 
-      - on_irradiance_surface 
-      - pei_irradiance_surface 
-      - qc_irradiance_surface 
-      - nb_humidity 
-      - nllab_humidity 
-      - ns_humidity 
-      - on_humidity 
-      - pei_humidity 
-      - qc_humidity 
-      - nb_temperature 
-      - nllab_temperature 
-      - ns_temperature 
-      - on_temperature 
-      - pei_temperature 
+      - nb_irradiance_surface
+      - nllab_irradiance_surface
+      - ns_irradiance_surface
+      - on_irradiance_surface
+      - pei_irradiance_surface
+      - qc_irradiance_surface
+      - nb_humidity
+      - nllab_humidity
+      - ns_humidity
+      - on_humidity
+      - pei_humidity
+      - qc_humidity
+      - nb_temperature
+      - nllab_temperature
+      - ns_temperature
+      - on_temperature
+      - pei_temperature
       - qc_temperature
     n_components: 6
 
@@ -152,7 +155,7 @@ timeseries: # [dict[dict[...[list[string]]]]]
     - ns_humidity # humidity
     - ns_temperature # temperature
     - ns_wind_speed # wind speed
-  'on':
+  "on":
     - on_irradiance_surface # solar irradiance at surface
     - on_humidity # humidity
     - on_temperature # temperature

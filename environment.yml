@@ -14,3 +14,6 @@ dependencies:
     - xlsxwriter
     - scipy
     - tsam # WARNING: this is for representative period selection and requires modification. See README in representative_periods
+    - pip
+    - pip:
+        - canoe_schema @ git+ssh://git@github.com/CANOE-main/canoe-schema.git@yep/v4
