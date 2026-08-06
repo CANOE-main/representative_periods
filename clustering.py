@@ -135,6 +135,9 @@ def run(show_plots=False):
 
     print("\nClustering complete.\n")
 
+    # Plot accuracy indicators vs number of periods
+    plot_accuracy_vs_periods(test_periods)
+
     if show_plots:
         print("Showing plots.")
         pp.show()
@@ -299,7 +302,90 @@ def get_files(dir: list, dictionary: dict, files):
             for item in value:
                 if isinstance(item, str): files.append([*_dir, item])
 
-
+def plot_accuracy_vs_periods(test_periods):
+    """
+    Plot accuracy indicators vs number of periods in a facet grid.
+    Rows: timeseries, Columns: accuracy indicators
+    
+    Args:
+        test_periods (list): List of test period numbers to plot
+    """    
+    method = utils.config['clustering_method']
+    
+    # Collect accuracy data for all test periods
+    accuracy_data = {}
+    
+    for n_periods in test_periods:
+        csv_name = f"{method}_{n_periods}p.csv"
+        try:
+            accuracy_data[n_periods] = pd.read_csv(out_data + "accuracy_indicators/" + csv_name, index_col=0)
+        except:
+            print(f"Warning: No accuracy data found for {n_periods} periods. Skipping.")
+            continue
+    
+    # Get all unique accuracy indicators (columns) and timeseries (rows)
+    all_indicators, all_timeseries = set(), set()
+    for df in accuracy_data.values():
+        all_indicators.update(df.columns)
+        all_timeseries.update(df.index)
+    
+    all_indicators = sorted(list(all_indicators))
+    all_timeseries = sorted(list(all_timeseries))
+    
+    n_indicators = len(all_indicators)
+    n_timeseries = len(all_timeseries)
+    
+    # Create facet grid: rows = timeseries, columns = indicators
+    fig, axes = pp.subplots(figsize=[5*n_indicators, 4*n_timeseries], dpi=100, 
+                           nrows=n_timeseries, ncols=n_indicators)
+    
+    # Handle single row/column cases
+    if n_timeseries == 1 and n_indicators == 1: axes = [[axes]]
+    elif n_timeseries == 1: axes = [axes]
+    elif n_indicators == 1: axes = [[ax] for ax in axes]
+    
+    # Plot each combination of timeseries and indicator
+    for i, timeseries in enumerate(all_timeseries):
+        for j, indicator in enumerate(all_indicators):
+            periods, values = [], []
+            
+            # Collect data points for this timeseries-indicator combination
+            for n_periods in sorted(test_periods):
+                if (n_periods in accuracy_data and 
+                    timeseries in accuracy_data[n_periods].index and 
+                    indicator in accuracy_data[n_periods].columns):
+                    
+                    periods.append(n_periods)
+                    values.append(accuracy_data[n_periods].loc[timeseries, indicator])
+            
+            # Plot the data
+            if periods and values:
+                axes[i][j].plot(periods, values, 'o-', linewidth=2, markersize=6)
+                
+                # Highlight the final number of periods
+                if utils.config['final_periods'] in periods:
+                    final_idx = periods.index(utils.config['final_periods'])
+                    axes[i][j].plot(periods[final_idx], values[final_idx], 'ro', 
+                                   markersize=10, label=f"Final ({utils.config['final_periods']})")
+                    axes[i][j].legend()
+            
+            # Set labels and title
+            axes[i][j].set_xlabel('Number of Periods')
+            axes[i][j].set_ylabel(f'{indicator}')
+            axes[i][j].set_title(f'{timeseries} - {indicator}')
+            axes[i][j].grid(True, alpha=0.3)
+            
+            # Rotate x-axis labels if many periods
+            if len(test_periods) > 6:
+                axes[i][j].tick_params(axis='x', rotation=45)
+    
+    pp.tight_layout()
+    
+    # Save the plot
+    fig.savefig(out_data + "accuracy_indicators/" + "accuracy_vs_periods_facet.pdf", bbox_inches='tight')
+    print(f"Accuracy vs periods facet plot saved to {out_data}accuracy_indicators/accuracy_vs_periods_facet.pdf")
+    
+    return fig
 
 if __name__ == "__main__":
 
