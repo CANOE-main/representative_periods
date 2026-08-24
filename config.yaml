@@ -19,7 +19,7 @@ demand_preservation: "hourly" # [str]
 # This bottom percentile of DSDs is set to zero. Nice robust way to remove
 # all tiny DSDs while ensuring that error is small. If preserving hourly
 # demands, the annual total demand will be reduced by this factor.
-dsd_threshold: 0.001
+dsd_threshold: 0.01
 
 # Final number of representative periods to apply to the database
 final_periods: 64 # [integer]
