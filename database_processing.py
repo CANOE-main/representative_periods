@@ -249,6 +249,9 @@ def _get_schema_version(database):
     curs = conn.cursor()
 
     tables = {t[0] for t in curs.execute("SELECT name FROM sqlite_schema").fetchall()}
+    # Newer schemas (v4+) use a lowercase 'metadata' table instead of 'MetaData'.
+    # Only a genuinely unversioned, legacy Temoa 2 database has neither.
+    if 'metadata' in tables: return -1
     if 'MetaData' not in tables: return 0
 
     mj_vers = curs.execute("SELECT value FROM MetaData WHERE element == 'DB_MAJOR'").fetchone()[0]
